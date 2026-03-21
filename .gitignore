@@ -1,0 +1,9 @@
+.next
+node_modules
+out
+dist
+.DS_Store
+*.log
+data/app.db
+data/app.db-shm
+data/app.db-wal
