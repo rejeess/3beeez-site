@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useEffect, useState } from "react";
+import { FormEvent, useEffect, useRef, useState } from "react";
 
 type Message = {
   id: string;
@@ -14,6 +14,7 @@ type ChatDemoProps = {
   botId?: string;
   promptChips: string[];
   variant?: "full" | "widget";
+  pageUrl?: string;
 };
 
 type LeadForm = {
@@ -26,12 +27,17 @@ function createId(prefix: string) {
   return `${prefix}_${Math.random().toString(36).slice(2, 10)}`;
 }
 
+function createWelcomeMessage(companyName: string) {
+  return `Welcome to ${companyName}. I can help answer questions using ${companyName}'s approved website content, documents, and support information.`;
+}
+
 export function ChatDemo({
   botId = "3beeez-main",
   companySlug = "3beeez",
   companyName = "3Beeez",
   promptChips,
   variant = "full",
+  pageUrl,
 }: ChatDemoProps) {
   const [input, setInput] = useState("");
   const [leadForm, setLeadForm] = useState<LeadForm>({
@@ -47,9 +53,29 @@ export function ChatDemo({
     {
       id: "welcome",
       type: "bot",
-      text: "Welcome. I can answer questions about setup, training data, and how a 3Beeez website assistant would work for your business.",
+      text: createWelcomeMessage(companyName),
     },
   ]);
+
+  const threadEndRef = useRef<HTMLDivElement>(null);
+  const lastMessageRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (messages.length <= 1) return;
+    const last = messages[messages.length - 1];
+    if (last.type === "bot") {
+      lastMessageRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    } else {
+      threadEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [messages]);
+
+  useEffect(() => {
+    if (variant === "widget") {
+      inputRef.current?.focus();
+    }
+  }, [variant]);
 
   useEffect(() => {
     const storedConversationId = window.localStorage.getItem(
@@ -97,7 +123,7 @@ export function ChatDemo({
           companySlug,
           botId,
           visitorId: visitorId || undefined,
-          sourceUrl: window.location.href,
+          sourceUrl: pageUrl || window.location.href,
           message: cleaned,
           lead: leadForm,
         }),
@@ -220,14 +246,16 @@ export function ChatDemo({
         </div>
 
         <div className="chat-thread">
-          {messages.map((message) => (
+          {messages.map((message, index) => (
             <div
               key={message.id}
+              ref={index === messages.length - 1 ? lastMessageRef : undefined}
               className={`bubble bubble-${message.type}`}
             >
               {message.text}
             </div>
           ))}
+          <div ref={threadEndRef} />
         </div>
 
         <form className="chat-input-row" onSubmit={handleSubmit}>
@@ -235,6 +263,7 @@ export function ChatDemo({
             Ask a question
           </label>
           <input
+            ref={inputRef}
             id="chat-input"
             name="chat-input"
             type="text"

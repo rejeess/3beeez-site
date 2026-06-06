@@ -3,51 +3,69 @@ import { AdminConversationList } from "@/components/admin-conversation-list";
 import { LogoutForm } from "@/components/logout-form";
 import { requireClientPortalUser } from "@/lib/auth";
 import {
+  getKnowledgeModelByCompany,
   listCompanies,
   listConversationsByCompany,
   listKnowledgeEntriesByCompany,
 } from "@/lib/db";
+import { UploadStatusBanner } from "@/components/upload-status-banner";
+import {
+  saveNotesAction,
+  uploadPdfAction,
+  uploadWebsiteAction,
+  uploadWordAction,
+} from "./actions";
 
 export const dynamic = "force-dynamic";
 
 export default async function PortalPage({
   searchParams,
 }: {
-  searchParams: Promise<{ uploadError?: string }>;
+  searchParams: Promise<{ uploadError?: string; uploadSuccess?: string }>;
 }) {
   const user = await requireClientPortalUser();
-  const { uploadError } = await searchParams;
+  const { uploadError, uploadSuccess } = await searchParams;
 
-  if (user.role === "owner") {
-    redirect("/admin");
-  }
+  const companyId =
+    user.role === "owner"
+      ? listCompanies().find((c) => c.slug === "3beeez")?.id ?? null
+      : user.companyId;
 
-  if (!user.companyId) {
+  if (!companyId) {
     redirect("/login");
   }
 
-  const company = listCompanies().find((entry) => entry.id === user.companyId);
+  const company = listCompanies().find((entry) => entry.id === companyId);
 
   if (!company) {
     redirect("/login");
   }
 
-  const conversations = listConversationsByCompany(company.id);
-  const knowledgeEntries = listKnowledgeEntriesByCompany(company.id);
+  const conversations = listConversationsByCompany(companyId);
+  const knowledgeEntries = listKnowledgeEntriesByCompany(companyId);
+  const knowledgeModel = getKnowledgeModelByCompany(companyId);
 
   return (
     <main className="admin-shell">
       <section className="admin-hero">
         <div className="admin-topbar">
           <div>
-            <p className="eyebrow">Client portal</p>
+            <p className="eyebrow">
+              {user.role === "owner" ? "3Beeez knowledge portal" : "Client portal"}
+            </p>
             <h1>{company.name} chat inbox</h1>
           </div>
-          <LogoutForm />
+          <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
+            {user.role === "owner" ? (
+              <a className="button button-secondary" href="/admin">Back to admin</a>
+            ) : null}
+            <LogoutForm />
+          </div>
         </div>
         <p className="admin-intro">
-          This portal shows only the conversations captured by your company&apos;s
-          chatbot.
+          {user.role === "owner"
+            ? "Upload knowledge so visitors to the 3Beeez website can get accurate answers from the chatbot."
+            : "This portal shows only the conversations captured by your company's chatbot."}
         </p>
       </section>
 
@@ -70,15 +88,27 @@ export default async function PortalPage({
           <strong>{knowledgeEntries.length}</strong>
           <span>Knowledge sources stored for the bot</span>
         </article>
+        <article className="admin-summary-card">
+          <strong>{knowledgeModel?.chunkCount || 0}</strong>
+          <span>
+            Indexed knowledge chunks
+            {knowledgeModel?.trainedAt
+              ? ` • trained ${new Date(knowledgeModel.trainedAt).toLocaleString()}`
+              : ""}
+          </span>
+        </article>
       </section>
 
       <section className="portal-workspace-grid">
-        {uploadError ? (
-          <article className="portal-card portal-card-wide">
-            <strong>Upload issue</strong>
-            <p>{uploadError}</p>
-          </article>
-        ) : null}
+        <article className="portal-card portal-card-wide">
+          <strong>Your install script</strong>
+          <p>
+            Paste this script just before the closing <code>&lt;/body&gt;</code> tag on every page of your website.
+          </p>
+          <pre className="install-snippet"><code>{`<script\n  src="/widget-script?installToken=${company.installToken}"\n  data-position="bottom-right">\n</script>`}</code></pre>
+        </article>
+
+        <UploadStatusBanner success={uploadSuccess} error={uploadError} />
 
         <article className="portal-card">
           <strong>Website URL ingest</strong>
@@ -86,7 +116,7 @@ export default async function PortalPage({
             Paste a real website URL so the bot can use public company content
             for local testing.
           </p>
-          <form action="/api/portal/knowledge/website" className="knowledge-form" method="post">
+          <form action={uploadWebsiteAction} className="knowledge-form">
             <label className="login-label">
               <span>Website URL</span>
               <input
@@ -108,12 +138,7 @@ export default async function PortalPage({
             Upload a PDF document like a brochure, pricing guide, policy, or
             help manual.
           </p>
-          <form
-            action="/api/portal/knowledge/pdf"
-            className="knowledge-form"
-            encType="multipart/form-data"
-            method="post"
-          >
+          <form action={uploadPdfAction} className="knowledge-form">
             <label className="login-label">
               <span>PDF document</span>
               <input
@@ -135,12 +160,7 @@ export default async function PortalPage({
             Upload a DOCX or DOC file with support notes, onboarding steps, or
             internal product details.
           </p>
-          <form
-            action="/api/portal/knowledge/word"
-            className="knowledge-form"
-            encType="multipart/form-data"
-            method="post"
-          >
+          <form action={uploadWordAction} className="knowledge-form">
             <label className="login-label">
               <span>Word document</span>
               <input
@@ -157,33 +177,32 @@ export default async function PortalPage({
         </article>
 
         <article className="portal-card">
-          <strong>Previous chat/support history</strong>
+          <strong>Plain text notes</strong>
           <p>
-            Paste previous customer support notes or conversation summaries so
-            the bot can answer with more context.
+            Paste any product details, FAQs, pricing, support notes, or anything
+            else the bot should know. Use a clear title so it is easy to manage.
           </p>
-          <form action="/api/portal/knowledge/history" className="knowledge-form" method="post">
-            <input name="kind" type="hidden" value="history" />
+          <form action={saveNotesAction} className="knowledge-form">
             <label className="login-label">
               <span>Title</span>
               <input
                 name="title"
                 type="text"
-                placeholder="Past support highlights"
+                placeholder="e.g. Pricing FAQ, Onboarding steps, About us"
                 required
               />
             </label>
             <label className="login-label">
-              <span>History notes</span>
+              <span>Notes</span>
               <textarea
                 name="content"
-                placeholder="Paste previous chat history or support notes"
+                placeholder="Paste or type any content you want the bot to use when answering visitor questions"
                 rows={6}
                 required
               />
             </label>
             <button className="button button-primary login-button" type="submit">
-              Save history notes
+              Save notes
             </button>
           </form>
         </article>

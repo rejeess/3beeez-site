@@ -63,7 +63,7 @@ export default async function PurchaseDemoPage({
             Test site: <code>{`/test-site/${company.slug}`}</code>
           </p>
           <p>
-            Installed site preview: <code>{`/test-site/${company.slug}/installed`}</code>
+            Installed site preview: <code>{`/test-site/${company.slug}/script-tag`}</code>
           </p>
         </div>
 
@@ -88,7 +88,7 @@ export default async function PurchaseDemoPage({
               </Link>
               <Link
                 className="button button-secondary"
-                href={`/test-site/${company.slug}/installed`}
+                href={`/test-site/${company.slug}/script-tag`}
               >
                 Open installed website
               </Link>

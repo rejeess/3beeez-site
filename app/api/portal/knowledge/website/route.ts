@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/auth";
-import { addKnowledgeEntry } from "@/lib/db";
+import { getCompanyBySlug } from "@/lib/db";
 import { ingestWebsiteUrl } from "@/lib/knowledge-ingest";
+import { storeKnowledgeSource } from "@/lib/knowledge-service";
 
 export async function POST(request: Request) {
   try {
@@ -11,25 +12,29 @@ export async function POST(request: Request) {
       return NextResponse.redirect(new URL("/login", request.url));
     }
 
-    if (user.role !== "owner" && !user.companyId) {
+    const companyId =
+      user.role === "owner"
+        ? (getCompanyBySlug("3beeez")?.id ?? null)
+        : user.companyId;
+
+    if (!companyId) {
       return NextResponse.redirect(new URL("/login", request.url));
     }
 
     const formData = await request.formData();
     const url = String(formData.get("websiteUrl") || "").trim();
-    const companyId = user.companyId;
 
-    if (!url || !companyId) {
+    if (!url) {
       return NextResponse.redirect(new URL("/portal", request.url));
     }
 
     const website = await ingestWebsiteUrl(url);
 
-    addKnowledgeEntry({
+    await storeKnowledgeSource({
       companyId,
       kind: "website",
       title: website.title,
-      content: `Source URL: ${url}\n\n${website.content}`,
+      content: website.content,
     });
 
     return NextResponse.redirect(new URL("/portal", request.url));

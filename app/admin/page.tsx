@@ -2,6 +2,7 @@ import { AdminConversationList } from "@/components/admin-conversation-list";
 import { LogoutForm } from "@/components/logout-form";
 import { requireOwner } from "@/lib/auth";
 import { listCompanies, listConversations } from "@/lib/db";
+import { updateCompanyStatus } from "./actions";
 
 export const dynamic = "force-dynamic";
 
@@ -18,7 +19,10 @@ export default async function AdminPage() {
             <p className="eyebrow">Admin inbox</p>
             <h1>Customer chat conversations</h1>
           </div>
-          <LogoutForm />
+          <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
+            <a className="button button-primary" href="/portal">Manage 3Beeez Knowledge</a>
+            <LogoutForm />
+          </div>
         </div>
         <p className="admin-intro">
           Every chat sent through the website is stored here with optional lead
@@ -50,16 +54,40 @@ export default async function AdminPage() {
       <section className="portal-directory">
         {companies.map((company) => (
           <article className="portal-card" key={company.slug}>
-            <strong>{company.name}</strong>
+            <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+              <strong>{company.name}</strong>
+              <span className={`status-badge status-badge-${company.status}`}>
+                {company.status}
+              </span>
+            </div>
             <p>
-              Portal: <code>/portal</code>
+              Bot ID: <code>{company.botId}</code>
             </p>
             <p>
-              Chat bot ID: <code>{company.botId}</code>
+              Allowed domain: <code>{company.allowedDomain || "unrestricted"}</code>
             </p>
             <p>
               Test site: <code>{`/test-site/${company.slug}`}</code>
             </p>
+            <div className="purchase-actions" style={{ marginTop: "12px" }}>
+              {company.status === "active" ? (
+                <form action={updateCompanyStatus}>
+                  <input type="hidden" name="companyId" value={company.id} />
+                  <input type="hidden" name="status" value="suspended" />
+                  <button className="button button-secondary" type="submit">
+                    Suspend
+                  </button>
+                </form>
+              ) : (
+                <form action={updateCompanyStatus}>
+                  <input type="hidden" name="companyId" value={company.id} />
+                  <input type="hidden" name="status" value="active" />
+                  <button className="button button-primary" type="submit">
+                    Activate
+                  </button>
+                </form>
+              )}
+            </div>
           </article>
         ))}
       </section>

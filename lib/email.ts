@@ -33,7 +33,7 @@ export async function sendPurchaseEmail(order: PurchaseOrderRecord) {
   });
 
   const loginUrl = `${getBaseUrl()}${order.loginUrl}`;
-  const installedSiteUrl = `${getBaseUrl()}/test-site/${order.companySlug}/installed`;
+  const installedSiteUrl = `${getBaseUrl()}/test-site/${order.companySlug}/script-tag`;
 
   try {
     await transporter.sendMail({

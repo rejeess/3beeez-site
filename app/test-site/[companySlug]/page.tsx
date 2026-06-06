@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getCompanyBySlug } from "@/lib/db";
-import Script from "next/script";
 
 type TestSitePageProps = {
   params: Promise<{
@@ -67,7 +66,13 @@ export default async function TestSitePage({ params }: TestSitePageProps) {
               className="button button-secondary"
               href={`/test-site/${company.slug}/installed`}
             >
-              View website with script
+              Manual install test
+            </Link>
+            <Link
+              className="button button-secondary"
+              href={`/test-site/${company.slug}/script-tag`}
+            >
+              View script tag test
             </Link>
           </div>
         </article>
@@ -92,16 +97,12 @@ export default async function TestSitePage({ params }: TestSitePageProps) {
           </p>
           <Link
             className="button button-secondary"
-            href={`/test-site/${company.slug}/installed`}
+            href={`/test-site/${company.slug}/script-tag`}
           >
-            Compare with installed version
+            Compare with script tag version
           </Link>
         </article>
       </section>
-      <Script
-        src={`/widget-script?botId=${encodeURIComponent(company.botId)}&position=bottom-right&iconColor=%235ae0d2`}
-        strategy="afterInteractive"
-      />
     </main>
   );
 }

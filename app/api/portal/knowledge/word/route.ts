@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/auth";
-import { addKnowledgeEntry } from "@/lib/db";
+import { getCompanyBySlug } from "@/lib/db";
 import { ingestWordFile } from "@/lib/knowledge-ingest";
+import { storeKnowledgeSource } from "@/lib/knowledge-service";
 
 export async function POST(request: Request) {
   try {
@@ -11,21 +12,25 @@ export async function POST(request: Request) {
       return NextResponse.redirect(new URL("/login", request.url));
     }
 
-    if (user.role !== "owner" && !user.companyId) {
+    const companyId =
+      user.role === "owner"
+        ? (getCompanyBySlug("3beeez")?.id ?? null)
+        : user.companyId;
+
+    if (!companyId) {
       return NextResponse.redirect(new URL("/login", request.url));
     }
 
     const formData = await request.formData();
     const file = formData.get("wordFile");
-    const companyId = user.companyId;
 
-    if (!(file instanceof File) || file.size === 0 || !companyId) {
+    if (!(file instanceof File) || file.size === 0) {
       return NextResponse.redirect(new URL("/portal", request.url));
     }
 
     const document = await ingestWordFile(file);
 
-    addKnowledgeEntry({
+    await storeKnowledgeSource({
       companyId,
       kind: "word",
       title: document.title,
