@@ -1,48 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
 import {
   addMessage,
-  findRelevantKnowledgeEntry,
   getCompanyByBotId,
   getCompanyBySlug,
+  getRecentMessagesForConversation,
+  isDomainAllowed,
   upsertConversation,
 } from "@/lib/db";
+import { buildChatAnswer, retrieveKnowledgeForQuestion } from "@/lib/knowledge-service";
 
-const welcomeMessage =
-  "Welcome. I can answer questions about setup, training data, and how a 3Beeez website assistant would work for your business.";
-
-const cannedReplies = [
-  {
-    match: ["documents", "learn from", "pdf", "files"],
-    reply:
-      "The assistant can be trained on PDFs, policy documents, support articles, product pages, onboarding guides, and approved website content so replies stay grounded in your business information.",
-  },
-  {
-    match: ["add", "website", "script", "embed"],
-    reply:
-      "We provide a script tag that your client places on their site. That script loads a branded chat widget, connects it to the configured knowledge base, and starts handling visitor conversations in real time.",
-  },
-  {
-    match: ["real time", "support", "quickly", "fast"],
-    reply:
-      "Yes. The goal is instant first-response support for website visitors, with answers based on client data and clear paths to collect leads or hand off to a human team when needed.",
-  },
-];
-
-function resolveReply(message: string, knowledgeContext?: string) {
-  if (knowledgeContext) {
-    return knowledgeContext;
-  }
-
-  const normalized = message.toLowerCase();
-  const match = cannedReplies.find((entry) =>
-    entry.match.some((term) => normalized.includes(term))
-  );
-
-  if (match) {
-    return match.reply;
-  }
-
-  return "3Beeez is designed to help companies launch an AI chat service that understands their own documents and website content, then answers visitors directly from an embedded website widget.";
+function createWelcomeMessage(companyName: string) {
+  return `Welcome to ${companyName}. I can help answer questions using ${companyName}'s approved website content, documents, and support information.`;
 }
 
 export async function POST(request: NextRequest) {
@@ -80,6 +48,20 @@ export async function POST(request: NextRequest) {
     );
   }
 
+  if (company.status !== "active") {
+    return NextResponse.json(
+      { error: "This account is not active." },
+      { status: 403 }
+    );
+  }
+
+  if (!isDomainAllowed(company.allowedDomain, body.sourceUrl || "")) {
+    return NextResponse.json(
+      { error: "This chatbot is not authorized for this domain." },
+      { status: 403 }
+    );
+  }
+
   const conversation = await upsertConversation({
     publicId: body.conversationId,
     companyId: company.id,
@@ -99,9 +81,12 @@ export async function POST(request: NextRequest) {
     addMessage({
       conversationPublicId: conversation.publicId,
       role: "bot",
-      content: welcomeMessage,
+      content: createWelcomeMessage(company.name),
     });
   }
+
+  // Fetch prior turns before adding the current message so history reflects the conversation so far
+  const recentHistory = getRecentMessagesForConversation(conversation.publicId, 4);
 
   addMessage({
     conversationPublicId: conversation.publicId,
@@ -109,11 +94,13 @@ export async function POST(request: NextRequest) {
     content: message,
   });
 
-  const knowledgeEntry = findRelevantKnowledgeEntry(company.id, message);
-  const knowledgeReply = knowledgeEntry
-    ? `Based on ${knowledgeEntry.kind} "${knowledgeEntry.title}", here is the best answer: ${knowledgeEntry.content}`
-    : undefined;
-  const reply = resolveReply(message, knowledgeReply);
+  const groundedChunks = await retrieveKnowledgeForQuestion(company.id, message, 4);
+  const reply = await buildChatAnswer({
+    companyName: company.name,
+    question: message,
+    chunks: groundedChunks,
+    history: recentHistory,
+  });
 
   const botMessage = addMessage({
     conversationPublicId: conversation.publicId,
@@ -126,6 +113,11 @@ export async function POST(request: NextRequest) {
     companySlug: company.slug,
     visitorId: conversation.visitorId,
     reply: botMessage.content,
+    sources: groundedChunks.map((chunk) => ({
+      title: chunk.title,
+      kind: chunk.kind,
+      score: Number(chunk.score.toFixed(3)),
+    })),
     lead: {
       name: conversation.leadName,
       email: conversation.leadEmail,

@@ -7,3 +7,7 @@ dist
 data/app.db
 data/app.db-shm
 data/app.db-wal
+.env
+.env.local
+.env.*.local
+tsconfig.tsbuildinfo

@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/auth";
-import { addKnowledgeEntry } from "@/lib/db";
+import { getCompanyBySlug } from "@/lib/db";
 import { ingestPdfFile } from "@/lib/knowledge-ingest";
+import { storeKnowledgeSource } from "@/lib/knowledge-service";
 
 export async function POST(request: Request) {
   try {
@@ -11,7 +12,12 @@ export async function POST(request: Request) {
       return NextResponse.redirect(new URL("/login", request.url));
     }
 
-    if (user.role !== "owner" && !user.companyId) {
+    const companyId =
+      user.role === "owner"
+        ? (getCompanyBySlug("3beeez")?.id ?? null)
+        : user.companyId;
+
+    if (!companyId) {
       return NextResponse.redirect(new URL("/login", request.url));
     }
 
@@ -23,13 +29,8 @@ export async function POST(request: Request) {
     }
 
     const document = await ingestPdfFile(file);
-    const companyId = user.companyId;
 
-    if (!companyId) {
-      return NextResponse.redirect(new URL("/admin", request.url));
-    }
-
-    addKnowledgeEntry({
+    await storeKnowledgeSource({
       companyId,
       kind: "pdf",
       title: document.title,

@@ -1,6 +1,9 @@
+import { headers } from "next/headers";
 import { ChatDemo } from "@/components/chat-demo";
+import { FloatingChatButton } from "@/components/floating-chat-button";
 import { LogoutForm } from "@/components/logout-form";
 import { getCurrentUser } from "@/lib/auth";
+import { getCompanyBySlug } from "@/lib/db";
 import { purchasePlans } from "@/lib/purchase";
 
 const promptChips = [
@@ -11,8 +14,14 @@ const promptChips = [
 
 export default async function HomePage() {
   const currentUser = await getCurrentUser();
+  const threeBeeezCompany = getCompanyBySlug("3beeez");
+  const headersList = await headers();
+  const host = headersList.get("host") || "localhost:3000";
+  const proto = host.startsWith("localhost") || host.match(/^\d+\.\d+\.\d+\.\d+/) ? "http" : "https";
+  const origin = `${proto}://${host}`;
 
   return (
+    <>
     <div className="page-shell">
       <header className="site-header">
         <a className="brand" href="#top" aria-label="3Beeez home">
@@ -318,6 +327,12 @@ export default async function HomePage() {
           </div>
         </section>
       </main>
+
     </div>
+
+    {threeBeeezCompany ? (
+      <FloatingChatButton botId={threeBeeezCompany.botId} origin={origin} />
+    ) : null}
+    </>
   );
 }

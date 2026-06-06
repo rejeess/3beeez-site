@@ -1,21 +1,67 @@
 import "server-only";
-import { promisify } from "node:util";
-import { execFile as execFileCallback } from "node:child_process";
-import { mkdtemp, rm, writeFile } from "node:fs/promises";
-import { join } from "node:path";
-import { tmpdir } from "node:os";
-
-const execFile = promisify(execFileCallback);
 
 function cleanText(input: string) {
   return input.replace(/\s+/g, " ").trim();
 }
 
+function isNavFragment(line: string) {
+  const lowered = line.toLowerCase();
+
+  if (
+    lowered.includes("quick links") ||
+    lowered.includes("contact info") ||
+    lowered.includes("copyright") ||
+    lowered.includes("all rights reserved") ||
+    lowered.includes("privacy policy") ||
+    lowered.includes("terms of service") ||
+    lowered.includes("cookie policy") ||
+    lowered.includes("skip to content") ||
+    lowered.includes("sign in") ||
+    lowered.includes("sign up") ||
+    lowered.includes("log in") ||
+    lowered.includes("log out") ||
+    lowered.includes("my account") ||
+    lowered.includes("shopping cart") ||
+    /\+?\d[\d\s()-]{7,}/.test(line) ||
+    /[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}/i.test(line)
+  ) {
+    return true;
+  }
+
+  // Drop short fragments with no sentence structure (nav menu items)
+  const wordCount = line.trim().split(/\s+/).length;
+  if (wordCount <= 4 && !/[.!?]$/.test(line.trim())) {
+    return true;
+  }
+
+  return false;
+}
+
+function cleanWebsiteText(input: string) {
+  return input
+    .split(/(?<=[.!?])\s+|\n+/)
+    .map((line) => cleanText(line))
+    .filter(Boolean)
+    .filter((line) => !isNavFragment(line))
+    .join(" ");
+}
+
 function stripHtml(html: string) {
-  return cleanText(
-    html
+  const mainMatch = html.match(/<main[\s\S]*?<\/main>/i);
+  const articleMatch = html.match(/<article[\s\S]*?<\/article>/i);
+  const source = mainMatch?.[0] || articleMatch?.[0] || html;
+
+  return cleanWebsiteText(
+    source
       .replace(/<script[\s\S]*?<\/script>/gi, " ")
       .replace(/<style[\s\S]*?<\/style>/gi, " ")
+      .replace(/<nav[\s\S]*?<\/nav>/gi, " ")
+      .replace(/<header[\s\S]*?<\/header>/gi, " ")
+      .replace(/<footer[\s\S]*?<\/footer>/gi, " ")
+      .replace(/<aside[\s\S]*?<\/aside>/gi, " ")
+      .replace(/<form[\s\S]*?<\/form>/gi, " ")
+      .replace(/<noscript[\s\S]*?<\/noscript>/gi, " ")
+      .replace(/<svg[\s\S]*?<\/svg>/gi, " ")
       .replace(/<[^>]+>/g, " ")
       .replace(/&nbsp;/g, " ")
       .replace(/&amp;/g, "&")
@@ -45,27 +91,18 @@ export async function ingestWebsiteUrl(url: string) {
 }
 
 export async function ingestPdfFile(file: File) {
-  const buffer = Buffer.from(await file.arrayBuffer());
-  const tempDir = await mkdtemp(join(tmpdir(), "threebeeez-pdf-"));
-  const tempFilePath = join(tempDir, file.name || "upload.pdf");
-  await writeFile(tempFilePath, buffer);
+  const { extractText } = await import("unpdf");
+  const buffer = await file.arrayBuffer();
+  const result = await extractText(new Uint8Array(buffer), { mergePages: true });
+  const text = result.text ?? "";
 
-  let extracted = "";
-
-  try {
-    const { stdout } = await execFile("/usr/bin/strings", ["-n", "6", tempFilePath]);
-    extracted = stdout;
-  } finally {
-    await rm(tempDir, { recursive: true, force: true });
-  }
-
-  if (!cleanText(extracted)) {
-    throw new Error("Unable to extract readable text from this PDF for local testing.");
+  if (!cleanText(text)) {
+    throw new Error("Unable to extract readable text from this PDF.");
   }
 
   return {
     title: file.name.replace(/\.pdf$/i, "") || "PDF document",
-    content: cleanText(extracted).slice(0, 12000),
+    content: cleanText(text).slice(0, 12000),
   };
 }
 

@@ -5,6 +5,7 @@ import { getCompanyByBotId } from "@/lib/db";
 type WidgetPageProps = {
   searchParams: Promise<{
     botId?: string;
+    pageUrl?: string;
   }>;
 };
 
@@ -14,7 +15,7 @@ const widgetPrompts = [
 ];
 
 export default async function WidgetPage({ searchParams }: WidgetPageProps) {
-  const { botId } = await searchParams;
+  const { botId, pageUrl } = await searchParams;
   const company = botId ? getCompanyByBotId(botId) : undefined;
 
   if (!company) {
@@ -29,6 +30,7 @@ export default async function WidgetPage({ searchParams }: WidgetPageProps) {
         companySlug={company.slug}
         promptChips={widgetPrompts}
         variant="widget"
+        pageUrl={pageUrl}
       />
     </main>
   );

@@ -72,7 +72,7 @@ export default async function PurchaseSuccessPage({
               </Link>
               <Link
                 className="button button-secondary"
-                href={`/test-site/${order.companySlug}/installed`}
+                href={`/test-site/${order.companySlug}/script-tag`}
                 rel="noopener noreferrer"
                 target="_blank"
               >

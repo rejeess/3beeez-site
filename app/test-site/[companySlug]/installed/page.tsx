@@ -57,6 +57,12 @@ export default async function InstalledTestSitePage({
             <Link className="button button-secondary" href={`/test-site/${company.slug}`}>
               View normal website
             </Link>
+            <Link
+              className="button button-secondary"
+              href={`/test-site/${company.slug}/script-tag`}
+            >
+              View script tag test
+            </Link>
             <Link className="button button-primary" href="/portal">
               Open client portal
             </Link>

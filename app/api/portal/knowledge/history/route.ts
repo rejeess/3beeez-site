@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/auth";
-import { addKnowledgeEntry } from "@/lib/db";
+import { getCompanyBySlug } from "@/lib/db";
+import { storeKnowledgeSource } from "@/lib/knowledge-service";
 
 export async function POST(request: Request) {
   const user = await getCurrentUser();
@@ -9,20 +10,24 @@ export async function POST(request: Request) {
     return NextResponse.redirect(new URL("/login", request.url));
   }
 
-  if (user.role !== "owner" && !user.companyId) {
+  const companyId =
+    user.role === "owner"
+      ? (getCompanyBySlug("3beeez")?.id ?? null)
+      : user.companyId;
+
+  if (!companyId) {
     return NextResponse.redirect(new URL("/login", request.url));
   }
 
   const formData = await request.formData();
   const title = String(formData.get("title") || "").trim();
   const content = String(formData.get("content") || "").trim();
-  const companyId = user.companyId;
 
-  if (!title || !content || !companyId) {
+  if (!title || !content) {
     return NextResponse.redirect(new URL("/portal", request.url));
   }
 
-  addKnowledgeEntry({
+  await storeKnowledgeSource({
     companyId,
     kind: "history",
     title,

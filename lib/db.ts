@@ -4,12 +4,26 @@ import { randomBytes, scryptSync, timingSafeEqual } from "node:crypto";
 import { join } from "node:path";
 import { DatabaseSync } from "node:sqlite";
 import { getPurchaseMode } from "@/lib/purchase";
+import {
+  buildSparseVector,
+  chunkKnowledgeContent,
+  cosineSimilarity,
+  deserializeVector,
+  serializeVector,
+  tokenizeForRetrieval,
+  tokenMatchesText,
+} from "@/lib/rag";
+
+export type CompanyStatus = "active" | "suspended" | "expired";
 
 export type CompanyRecord = {
   id: number;
   slug: string;
   name: string;
   botId: string;
+  allowedDomain: string;
+  status: CompanyStatus;
+  installToken: string;
 };
 
 export type UserRole = "owner" | "client_admin";
@@ -59,6 +73,29 @@ export type KnowledgeEntryRecord = {
   createdAt: string;
 };
 
+export type KnowledgeChunkRecord = {
+  id: number;
+  knowledgeEntryId: number;
+  companyId: number;
+  kind: KnowledgeEntryRecord["kind"];
+  title: string;
+  content: string;
+  chunkIndex: number;
+  vectorJson: string;
+  createdAt: string;
+};
+
+export type KnowledgeChunkMatch = KnowledgeChunkRecord & {
+  score: number;
+};
+
+export type KnowledgeModelRecord = {
+  companyId: number;
+  sourceCount: number;
+  chunkCount: number;
+  trainedAt: string;
+};
+
 export type PurchaseOrderRecord = {
   id: number;
   publicId: string;
@@ -84,6 +121,35 @@ const dbPath = join(dataDir, "app.db");
 declare global {
   // eslint-disable-next-line no-var
   var __threeBeeezDb: DatabaseSync | undefined;
+}
+
+function generateInstallToken() {
+  return randomBytes(20).toString("hex");
+}
+
+function extractDomain(url: string): string {
+  try {
+    const parsed = new URL(url.trim());
+    return parsed.hostname.replace(/^www\./, "").toLowerCase();
+  } catch {
+    return "";
+  }
+}
+
+export function isDomainAllowed(allowedDomain: string, originOrUrl: string): boolean {
+  if (!allowedDomain) return true;
+  if (!originOrUrl) return false;
+
+  const lower = originOrUrl.toLowerCase();
+  if (lower.includes("localhost") || lower.includes("127.0.0.1")) return true;
+
+  try {
+    const parsed = new URL(originOrUrl);
+    const hostname = parsed.hostname.replace(/^www\./, "").toLowerCase();
+    return hostname === allowedDomain || hostname.endsWith(`.${allowedDomain}`);
+  } catch {
+    return false;
+  }
 }
 
 function createId(prefix: string) {
@@ -212,6 +278,28 @@ function initialize(db: DatabaseSync) {
       FOREIGN KEY (company_id) REFERENCES companies(id)
     );
 
+    CREATE TABLE IF NOT EXISTS knowledge_chunks (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      knowledge_entry_id INTEGER NOT NULL,
+      company_id INTEGER NOT NULL,
+      kind TEXT NOT NULL,
+      title TEXT NOT NULL,
+      content TEXT NOT NULL,
+      chunk_index INTEGER NOT NULL,
+      vector_json TEXT NOT NULL,
+      created_at TEXT NOT NULL,
+      FOREIGN KEY (knowledge_entry_id) REFERENCES knowledge_entries(id),
+      FOREIGN KEY (company_id) REFERENCES companies(id)
+    );
+
+    CREATE TABLE IF NOT EXISTS knowledge_models (
+      company_id INTEGER PRIMARY KEY,
+      source_count INTEGER NOT NULL,
+      chunk_count INTEGER NOT NULL,
+      trained_at TEXT NOT NULL,
+      FOREIGN KEY (company_id) REFERENCES companies(id)
+    );
+
     CREATE TABLE IF NOT EXISTS purchase_orders (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       public_id TEXT NOT NULL UNIQUE,
@@ -231,6 +319,17 @@ function initialize(db: DatabaseSync) {
     );
   `);
 
+  const companyColumns = db.prepare("PRAGMA table_info(companies)").all() as Array<{ name: string }>;
+  if (!companyColumns.some((col) => col.name === "allowed_domain")) {
+    db.exec("ALTER TABLE companies ADD COLUMN allowed_domain TEXT NOT NULL DEFAULT ''");
+  }
+  if (!companyColumns.some((col) => col.name === "status")) {
+    db.exec("ALTER TABLE companies ADD COLUMN status TEXT NOT NULL DEFAULT 'active'");
+  }
+  if (!companyColumns.some((col) => col.name === "install_token")) {
+    db.exec("ALTER TABLE companies ADD COLUMN install_token TEXT NOT NULL DEFAULT ''");
+  }
+
   const now = new Date().toISOString();
 
   db.prepare(
@@ -249,6 +348,19 @@ function initialize(db: DatabaseSync) {
 
   const companies = listCompanies(db);
   const companyMap = new Map(companies.map((company) => [company.slug, company.id]));
+
+  db.prepare(
+    "UPDATE companies SET allowed_domain = 'localhost' WHERE slug = 'acme-support' AND allowed_domain = ''"
+  ).run();
+
+  for (const company of companies) {
+    if (!company.installToken) {
+      db.prepare("UPDATE companies SET install_token = ? WHERE id = ?").run(
+        generateInstallToken(),
+        company.id
+      );
+    }
+  }
 
   seedUser(db, {
     companyId: companyMap.get("3beeez") ?? null,
@@ -303,6 +415,8 @@ function initialize(db: DatabaseSync) {
       now
     );
   }
+
+  backfillKnowledgeChunks(db);
 }
 
 export function getDb() {
@@ -319,21 +433,115 @@ export function getDb() {
   return global.__threeBeeezDb;
 }
 
+function listKnowledgeEntryRows(db = getDb()) {
+  return db
+    .prepare(
+      `
+        SELECT
+          id,
+          company_id as companyId,
+          kind,
+          title,
+          content,
+          created_at as createdAt
+        FROM knowledge_entries
+        ORDER BY id ASC
+      `
+    )
+    .all() as KnowledgeEntryRecord[];
+}
+
+function rebuildKnowledgeModel(companyId: number, db = getDb()) {
+  const sourceCountRow = db
+    .prepare("SELECT COUNT(*) as count FROM knowledge_entries WHERE company_id = ?")
+    .get(companyId) as { count: number };
+  const chunkCountRow = db
+    .prepare("SELECT COUNT(*) as count FROM knowledge_chunks WHERE company_id = ?")
+    .get(companyId) as { count: number };
+
+  db.prepare(
+    `
+      INSERT INTO knowledge_models (company_id, source_count, chunk_count, trained_at)
+      VALUES (?, ?, ?, ?)
+      ON CONFLICT(company_id) DO UPDATE SET
+        source_count = excluded.source_count,
+        chunk_count = excluded.chunk_count,
+        trained_at = excluded.trained_at
+    `
+  ).run(
+    companyId,
+    sourceCountRow.count,
+    chunkCountRow.count,
+    new Date().toISOString()
+  );
+}
+
+function indexKnowledgeEntry(entry: KnowledgeEntryRecord, db = getDb()) {
+  db.prepare("DELETE FROM knowledge_chunks WHERE knowledge_entry_id = ?").run(entry.id);
+
+  const chunks = chunkKnowledgeContent(entry.title, entry.content);
+  const insertChunk = db.prepare(
+    `
+      INSERT INTO knowledge_chunks (
+        knowledge_entry_id,
+        company_id,
+        kind,
+        title,
+        content,
+        chunk_index,
+        vector_json,
+        created_at
+      )
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    `
+  );
+
+  chunks.forEach((chunk, index) => {
+    insertChunk.run(
+      entry.id,
+      entry.companyId,
+      entry.kind,
+      entry.title,
+      chunk,
+      index,
+      serializeVector(buildSparseVector(chunk)),
+      new Date().toISOString()
+    );
+  });
+
+  rebuildKnowledgeModel(entry.companyId, db);
+}
+
+function backfillKnowledgeChunks(db = getDb()) {
+  const entries = listKnowledgeEntryRows(db);
+  const statement = db.prepare(
+    "SELECT id FROM knowledge_chunks WHERE knowledge_entry_id = ? LIMIT 1"
+  );
+
+  for (const entry of entries) {
+    const hasChunk = statement.get(entry.id) as { id: number } | undefined;
+
+    if (!hasChunk) {
+      indexKnowledgeEntry(entry, db);
+    }
+  }
+}
+
 export function listCompanies(db = getDb()) {
   return db
-    .prepare("SELECT id, slug, name, bot_id as botId FROM companies ORDER BY name")
+    .prepare("SELECT id, slug, name, bot_id as botId, allowed_domain as allowedDomain, status, install_token as installToken FROM companies ORDER BY name")
     .all() as CompanyRecord[];
 }
 
 export function getCompanyBySlug(slug: string) {
   return getDb()
-    .prepare("SELECT id, slug, name, bot_id as botId FROM companies WHERE slug = ?")
+    .prepare("SELECT id, slug, name, bot_id as botId, allowed_domain as allowedDomain, status, install_token as installToken FROM companies WHERE slug = ?")
     .get(slug) as CompanyRecord | undefined;
 }
 
 export function getCompanyByBotId(botId: string) {
   return getDb()
-    .prepare("SELECT id, slug, name, bot_id as botId FROM companies WHERE bot_id = ?")
+    .prepare("SELECT id, slug, name, bot_id as botId, allowed_domain as allowedDomain, status, install_token as installToken FROM companies WHERE bot_id = ?")
     .get(botId) as CompanyRecord | undefined;
 }
 
@@ -619,13 +827,53 @@ export function listKnowledgeEntriesByCompany(companyId: number) {
     .all(companyId) as KnowledgeEntryRecord[];
 }
 
+export function getKnowledgeModelByCompany(companyId: number) {
+  return getDb()
+    .prepare(
+      `
+        SELECT
+          company_id as companyId,
+          source_count as sourceCount,
+          chunk_count as chunkCount,
+          trained_at as trainedAt
+        FROM knowledge_models
+        WHERE company_id = ?
+      `
+    )
+    .get(companyId) as KnowledgeModelRecord | undefined;
+}
+
+export function listKnowledgeChunksByCompany(companyId: number) {
+  return getDb()
+    .prepare(
+      `
+        SELECT
+          id,
+          knowledge_entry_id as knowledgeEntryId,
+          company_id as companyId,
+          kind,
+          title,
+          content,
+          chunk_index as chunkIndex,
+          vector_json as vectorJson,
+          created_at as createdAt
+        FROM knowledge_chunks
+        WHERE company_id = ?
+        ORDER BY id ASC
+      `
+    )
+    .all(companyId) as KnowledgeChunkRecord[];
+}
+
 export function addKnowledgeEntry(input: {
   companyId: number;
   kind: "document" | "website" | "history" | "pdf" | "word";
   title: string;
   content: string;
 }) {
-  getDb()
+  const db = getDb();
+  const createdAt = new Date().toISOString();
+  const result = db
     .prepare(
       `
         INSERT INTO knowledge_entries (company_id, kind, title, content, created_at)
@@ -637,8 +885,31 @@ export function addKnowledgeEntry(input: {
       input.kind,
       input.title.trim(),
       input.content.trim(),
-      new Date().toISOString()
+      createdAt
     );
+  const entry = db
+    .prepare(
+      `
+        SELECT
+          id,
+          company_id as companyId,
+          kind,
+          title,
+          content,
+          created_at as createdAt
+        FROM knowledge_entries
+        WHERE id = ?
+      `
+    )
+    .get(result.lastInsertRowid) as KnowledgeEntryRecord | undefined;
+
+  if (!entry) {
+    throw new Error("Unable to create knowledge entry.");
+  }
+
+  indexKnowledgeEntry(entry, db);
+
+  return entry;
 }
 
 export function findRelevantKnowledgeEntry(companyId: number, message: string) {
@@ -654,6 +925,37 @@ export function findRelevantKnowledgeEntry(companyId: number, message: string) {
         .some((token) => haystack.includes(token));
     }) || entries[0]
   );
+}
+
+export function retrieveRelevantKnowledgeChunks(companyId: number, message: string, limit = 4) {
+  const queryVector = buildSparseVector(message);
+  const queryTokens = tokenizeForRetrieval(message);
+  const chunks = listKnowledgeChunksByCompany(companyId);
+  const seen = new Set<string>();
+
+  return chunks
+    .map((chunk) => ({
+      ...chunk,
+      score:
+        cosineSimilarity(queryVector, deserializeVector(chunk.vectorJson)) +
+        queryTokens.reduce((bonus, token) => {
+          const content = chunk.content.toLowerCase();
+          return tokenMatchesText(token, content) ? bonus + 0.08 : bonus;
+        }, 0),
+    }))
+    .filter((chunk) => chunk.score > 0)
+    .sort((left, right) => right.score - left.score)
+    .filter((chunk) => {
+      const key = `${chunk.title.toLowerCase()}::${chunk.content.toLowerCase()}`;
+
+      if (seen.has(key)) {
+        return false;
+      }
+
+      seen.add(key);
+      return true;
+    })
+    .slice(0, limit) as KnowledgeChunkMatch[];
 }
 
 function slugifyCompanyName(input: string) {
@@ -715,6 +1017,14 @@ export function createPurchaseOrder(input: {
     throw new Error("Unable to create company.");
   }
 
+  const allowedDomain = extractDomain(input.websiteUrl);
+  if (allowedDomain) {
+    db.prepare("UPDATE companies SET allowed_domain = ? WHERE id = ?").run(allowedDomain, company.id);
+  }
+
+  const installToken = generateInstallToken();
+  db.prepare("UPDATE companies SET install_token = ? WHERE id = ?").run(installToken, company.id);
+
   const tempPassword = createTemporaryPassword();
   const normalizedEmail = input.adminEmail.trim().toLowerCase();
   const passwordHash = createPasswordHash(tempPassword);
@@ -758,7 +1068,7 @@ export function createPurchaseOrder(input: {
   const cardLast4 = input.cardNumber.replace(/\D/g, "").slice(-4);
   const scriptSnippet = `<script
   src="https://cdn.3beeez.com/widget.js"
-  data-bot-id="${company.botId}"
+  data-install-token="${installToken}"
   data-position="bottom-right"
   data-icon-color="${normalizedIconColor}">
 </script>`;
@@ -828,4 +1138,38 @@ export function getPurchaseOrder(publicId: string) {
       `
     )
     .get(publicId) as PurchaseOrderRecord | undefined;
+}
+
+export function setCompanyStatus(companyId: number, status: CompanyStatus) {
+  getDb()
+    .prepare("UPDATE companies SET status = ? WHERE id = ?")
+    .run(status, companyId);
+}
+
+export function getCompanyByInstallToken(token: string) {
+  return getDb()
+    .prepare(
+      "SELECT id, slug, name, bot_id as botId, allowed_domain as allowedDomain, status, install_token as installToken FROM companies WHERE install_token = ?"
+    )
+    .get(token) as CompanyRecord | undefined;
+}
+
+export function getRecentMessagesForConversation(
+  conversationPublicId: string,
+  limit = 4
+): Array<{ role: "user" | "bot"; content: string }> {
+  const rows = getDb()
+    .prepare(
+      `
+        SELECT m.role, m.content
+        FROM messages m
+        INNER JOIN conversations c ON c.id = m.conversation_id
+        WHERE c.public_id = ?
+        ORDER BY m.id DESC
+        LIMIT ?
+      `
+    )
+    .all(conversationPublicId, limit) as Array<{ role: string; content: string }>;
+
+  return rows.reverse() as Array<{ role: "user" | "bot"; content: string }>;
 }
