@@ -21,6 +21,7 @@ export default async function AdminPage() {
           </div>
           <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
             <a className="button button-primary" href="/portal">Manage 3Beeez Knowledge</a>
+            <a className="button button-secondary" href="/admin/change-password">Change password</a>
             <LogoutForm />
           </div>
         </div>

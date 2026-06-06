@@ -557,6 +557,13 @@ export function findUserByEmail(email: string) {
     .get(email) as (UserRecord & { passwordHash: string }) | undefined;
 }
 
+export function updateUserPassword(userId: number, newPassword: string) {
+  const hash = createPasswordHash(newPassword);
+  getDb()
+    .prepare("UPDATE users SET password_hash = ? WHERE id = ?")
+    .run(hash, userId);
+}
+
 export function createSession(userId: number) {
   const token = randomBytes(24).toString("hex");
   const createdAt = new Date();
