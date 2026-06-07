@@ -25,7 +25,7 @@ export async function signIn(email: string, password: string) {
   cookieStore.set(sessionCookieName, session.token, {
     httpOnly: true,
     sameSite: "lax",
-    secure: false,
+    secure: process.env.NODE_ENV === "production",
     path: "/",
     expires: session.expiresAt,
   });

@@ -362,12 +362,20 @@ function initialize(db: DatabaseSync) {
     }
   }
 
+  const ownerPassword = process.env.SEED_OWNER_PASSWORD?.trim() || randomBytes(16).toString("hex");
+  const clientPassword = process.env.SEED_CLIENT_PASSWORD?.trim() || randomBytes(16).toString("hex");
+
+  const ownerExists = db.prepare("SELECT id FROM users WHERE email = ?").get("owner@3beeez.com");
+  if (!ownerExists) {
+    console.log(`[3Beeez] Seeding owner account — set SEED_OWNER_PASSWORD env var to control the password. Generated password: ${ownerPassword}`);
+  }
+
   seedUser(db, {
     companyId: companyMap.get("3beeez") ?? null,
     email: "owner@3beeez.com",
     name: "3Beeez Owner",
     role: "owner",
-    password: "OwnerPass!2026",
+    password: ownerPassword,
   });
 
   seedUser(db, {
@@ -375,7 +383,7 @@ function initialize(db: DatabaseSync) {
     email: "admin@acme-support.com",
     name: "Acme Admin",
     role: "client_admin",
-    password: "AcmePortal!2026",
+    password: clientPassword,
   });
 
   const hasKnowledge = db
@@ -987,7 +995,9 @@ function createUniqueCompanySlug(baseName: string) {
 }
 
 function createTemporaryPassword() {
-  return `Chat${randomBytes(4).toString("hex")}!`;
+  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789!@#$";
+  const bytes = randomBytes(16);
+  return Array.from(bytes).map((b) => chars[b % chars.length]).join("");
 }
 
 export function createPurchaseOrder(input: {

@@ -60,7 +60,9 @@ export default async function PurchaseSuccessPage({
             <strong>Login details</strong>
             <p>Dedicated login URL: <code>{order.loginUrl}</code></p>
             <p>Email: <code>{order.adminEmail}</code></p>
-            <p>Temporary password: <code>{order.tempPassword}</code></p>
+            {emailStatus !== "sent" && (
+              <p>Temporary password: <code>{order.tempPassword}</code></p>
+            )}
             <div className="purchase-actions">
               <Link
                 className="button button-primary"
