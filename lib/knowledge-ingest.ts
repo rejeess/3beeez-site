@@ -70,7 +70,41 @@ function stripHtml(html: string) {
   );
 }
 
+const BLOCKED_HOSTNAMES = new Set([
+  "localhost",
+  "127.0.0.1",
+  "::1",
+  "0.0.0.0",
+  "169.254.169.254", // AWS/GCP instance metadata
+  "metadata.google.internal",
+]);
+
+function isPrivateHostname(hostname: string): boolean {
+  if (BLOCKED_HOSTNAMES.has(hostname)) return true;
+  // Private IPv4 ranges
+  if (/^10\./.test(hostname)) return true;
+  if (/^192\.168\./.test(hostname)) return true;
+  if (/^172\.(1[6-9]|2\d|3[01])\./.test(hostname)) return true;
+  if (/^100\.6[4-9]\./.test(hostname)) return true; // CGNAT
+  return false;
+}
+
 export async function ingestWebsiteUrl(url: string) {
+  let parsed: URL;
+  try {
+    parsed = new URL(url);
+  } catch {
+    throw new Error("Invalid URL.");
+  }
+
+  if (parsed.protocol !== "https:" && parsed.protocol !== "http:") {
+    throw new Error("Only http and https URLs are allowed.");
+  }
+
+  if (isPrivateHostname(parsed.hostname.toLowerCase())) {
+    throw new Error("URL points to a private or reserved address.");
+  }
+
   const response = await fetch(url, {
     headers: {
       "User-Agent": "3Beeez Local Knowledge Ingest",
