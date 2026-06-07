@@ -36,8 +36,11 @@ export default function ChangePasswordPage() {
         </label>
 
         {state.error && <p className="portal-card-error">{state.error}</p>}
+        {state.success && (
+          <p className="portal-card-success">Password updated successfully.</p>
+        )}
 
-        <button className="button button-primary" type="submit" disabled={pending}>
+        <button className="button button-primary" type="submit" disabled={pending || state.success}>
           {pending ? "Saving…" : "Update password"}
         </button>
       </form>

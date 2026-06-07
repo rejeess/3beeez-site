@@ -9,6 +9,7 @@ import {
   listKnowledgeEntriesByCompany,
 } from "@/lib/db";
 import { UploadStatusBanner } from "@/components/upload-status-banner";
+import { SubmitButton } from "@/components/submit-button";
 import {
   saveNotesAction,
   uploadPdfAction,
@@ -121,14 +122,12 @@ export default async function PortalPage({
               <span>Website URL</span>
               <input
                 name="websiteUrl"
-                type="url"
+                type="text"
                 placeholder="https://www.company.com"
                 required
               />
             </label>
-            <button className="button button-primary login-button" type="submit">
-              Import website content
-            </button>
+            <SubmitButton label="Import website content" pendingLabel="Importing…" />
           </form>
         </article>
 
@@ -148,9 +147,7 @@ export default async function PortalPage({
                 type="file"
               />
             </label>
-            <button className="button button-primary login-button" type="submit">
-              Upload PDF
-            </button>
+            <SubmitButton label="Upload PDF" pendingLabel="Uploading…" />
           </form>
         </article>
 
@@ -170,9 +167,7 @@ export default async function PortalPage({
                 type="file"
               />
             </label>
-            <button className="button button-primary login-button" type="submit">
-              Upload Word document
-            </button>
+            <SubmitButton label="Upload Word document" pendingLabel="Uploading…" />
           </form>
         </article>
 
@@ -201,9 +196,7 @@ export default async function PortalPage({
                 required
               />
             </label>
-            <button className="button button-primary login-button" type="submit">
-              Save notes
-            </button>
+            <SubmitButton label="Save notes" pendingLabel="Saving…" />
           </form>
         </article>
 

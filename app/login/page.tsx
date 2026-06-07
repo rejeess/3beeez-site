@@ -26,15 +26,6 @@ export default async function LoginPage() {
           owner account can view all companies and manage the service.
         </p>
         <LoginForm />
-        <div className="login-demo-card">
-          <strong>Seeded demo accounts</strong>
-          <p>
-            Owner: <code>owner@3beeez.com</code> / <code>OwnerPass!2026</code>
-          </p>
-          <p>
-            Client: <code>admin@acme-support.com</code> / <code>AcmePortal!2026</code>
-          </p>
-        </div>
         <Link className="login-link" href="/">
           Back to homepage
         </Link>
