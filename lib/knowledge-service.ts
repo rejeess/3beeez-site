@@ -24,7 +24,11 @@ export async function storeKnowledgeSource(input: StoredKnowledgeInput) {
   const entry = addKnowledgeEntry(input);
 
   if (isPgvectorConfigured()) {
-    await indexKnowledgeEntryInPgvector(entry);
+    try {
+      await indexKnowledgeEntryInPgvector(entry);
+    } catch (err) {
+      console.error("[3Beeez] pgvector indexing failed, entry is still available via SQLite:", err instanceof Error ? err.message : err);
+    }
   }
 
   return entry;
