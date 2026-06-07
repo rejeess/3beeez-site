@@ -14,6 +14,15 @@ function createWelcomeMessage(companyName: string) {
 }
 
 export async function POST(request: NextRequest) {
+  try {
+    return await handlePost(request);
+  } catch (error) {
+    console.error("[3Beeez] /api/chat unhandled error:", error instanceof Error ? error.stack : error);
+    return NextResponse.json({ error: "An unexpected error occurred." }, { status: 500 });
+  }
+}
+
+async function handlePost(request: NextRequest) {
   const body = (await request.json()) as {
     conversationId?: string;
     companySlug?: string;
@@ -125,3 +134,4 @@ export async function POST(request: NextRequest) {
     },
   });
 }
+
