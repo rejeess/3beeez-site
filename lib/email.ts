@@ -15,6 +15,36 @@ export function isEmailConfigured() {
   );
 }
 
+export async function sendPasswordResetEmail(to: string, resetUrl: string): Promise<"sent" | "not_configured" | "failed"> {
+  if (!isEmailConfigured()) return "not_configured";
+
+  const transporter = nodemailer.createTransport({
+    host: process.env.SMTP_HOST,
+    port: Number(process.env.SMTP_PORT),
+    secure: process.env.SMTP_SECURE === "true",
+    auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS },
+  });
+
+  try {
+    await transporter.sendMail({
+      from: process.env.SMTP_FROM,
+      to,
+      subject: "3Beeez — reset your password",
+      text: [
+        "You requested a password reset for your 3Beeez account.",
+        "",
+        `Click this link to set a new password (valid for 1 hour):`,
+        resetUrl,
+        "",
+        "If you did not request this, ignore this email.",
+      ].join("\n"),
+    });
+    return "sent";
+  } catch {
+    return "failed";
+  }
+}
+
 export async function sendPurchaseEmail(order: PurchaseOrderRecord) {
   if (!isEmailConfigured()) {
     return {

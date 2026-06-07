@@ -2,6 +2,7 @@
 
 import { requireOwner } from "@/lib/auth";
 import { findUserByEmail, updateUserPassword, verifyPassword } from "@/lib/db";
+import { validatePasswordStrength } from "@/lib/password";
 
 export async function changePasswordAction(
   _prev: { error: string; success: boolean },
@@ -17,9 +18,8 @@ export async function changePasswordAction(
     return { error: "All fields are required.", success: false };
   }
 
-  if (next.length < 8) {
-    return { error: "New password must be at least 8 characters.", success: false };
-  }
+  const strengthError = validatePasswordStrength(next);
+  if (strengthError) return { error: strengthError, success: false };
 
   if (next !== confirm) {
     return { error: "New passwords do not match.", success: false };

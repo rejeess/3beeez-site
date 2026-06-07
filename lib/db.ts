@@ -317,6 +317,16 @@ function initialize(db: DatabaseSync) {
       created_at TEXT NOT NULL,
       FOREIGN KEY (company_id) REFERENCES companies(id)
     );
+
+    CREATE TABLE IF NOT EXISTS password_reset_tokens (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      token TEXT NOT NULL UNIQUE,
+      user_id INTEGER NOT NULL,
+      expires_at TEXT NOT NULL,
+      used INTEGER NOT NULL DEFAULT 0,
+      created_at TEXT NOT NULL,
+      FOREIGN KEY (user_id) REFERENCES users(id)
+    );
   `);
 
   const companyColumns = db.prepare("PRAGMA table_info(companies)").all() as Array<{ name: string }>;
@@ -570,6 +580,37 @@ export function updateUserPassword(userId: number, newPassword: string) {
   getDb()
     .prepare("UPDATE users SET password_hash = ? WHERE id = ?")
     .run(hash, userId);
+}
+
+export function createPasswordResetToken(userId: number): string {
+  const token = randomBytes(32).toString("hex");
+  const expiresAt = new Date(Date.now() + 60 * 60 * 1000).toISOString(); // 1 hour
+  getDb()
+    .prepare(
+      "INSERT INTO password_reset_tokens (token, user_id, expires_at, created_at) VALUES (?, ?, ?, ?)"
+    )
+    .run(token, userId, expiresAt, new Date().toISOString());
+  return token;
+}
+
+export function findPasswordResetToken(token: string) {
+  return getDb()
+    .prepare(
+      `SELECT prt.token, prt.expires_at as expiresAt, prt.used,
+              users.id as userId, users.email, users.role
+       FROM password_reset_tokens prt
+       INNER JOIN users ON users.id = prt.user_id
+       WHERE prt.token = ? AND prt.used = 0`
+    )
+    .get(token) as
+    | { token: string; expiresAt: string; used: number; userId: number; email: string; role: string }
+    | undefined;
+}
+
+export function consumePasswordResetToken(token: string) {
+  getDb()
+    .prepare("UPDATE password_reset_tokens SET used = 1 WHERE token = ?")
+    .run(token);
 }
 
 export function createSession(userId: number) {
