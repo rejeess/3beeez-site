@@ -30,9 +30,13 @@ async function resolveCompanyId(): Promise<number> {
 
 export async function uploadWebsiteAction(formData: FormData) {
   const companyId = await resolveCompanyId();
-  const url = String(formData.get("websiteUrl") || "").trim();
+  let url = String(formData.get("websiteUrl") || "").trim();
 
   if (!url) redirect("/portal");
+
+  if (!/^https?:\/\//i.test(url)) {
+    url = "https://" + url;
+  }
 
   try {
     const website = await ingestWebsiteUrl(url);

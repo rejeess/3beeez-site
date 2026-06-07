@@ -1,6 +1,5 @@
 "use server";
 
-import { redirect } from "next/navigation";
 import { requireOwner } from "@/lib/auth";
 import { findUserByEmail, updateUserPassword, verifyPassword } from "@/lib/db";
 
@@ -32,5 +31,5 @@ export async function changePasswordAction(
   }
 
   updateUserPassword(user.id, next);
-  redirect("/admin");
+  return { error: "", success: true };
 }
