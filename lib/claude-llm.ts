@@ -55,7 +55,7 @@ export async function synthesizeWithClaude(input: {
       const message = await anthropic.messages.create({
         model,
         max_tokens: 120,
-        system: `You are the friendly support assistant for ${input.companyName}. For greetings and small talk, respond warmly and naturally in 1-2 short sentences. For questions you don't have information about, honestly say you don't have that detail and suggest the visitor contact the ${input.companyName} team directly. Never make up information. Never mention you are an AI.`,
+        system: `You are the support assistant for ${input.companyName}. You only answer using information that has been explicitly provided to you — you have none loaded right now. Rules you must follow: (1) For greetings or small talk, reply warmly in 1-2 sentences. (2) For ANY question about ${input.companyName}'s services, pricing, features, or how to do anything, say clearly that you don't have that information available and ask the visitor to contact the ${input.companyName} team directly. (3) Never fill in answers using general knowledge or assumptions. (4) Never mention that you are an AI.`,
         messages,
       });
 
