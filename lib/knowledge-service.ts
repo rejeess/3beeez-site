@@ -32,10 +32,13 @@ export async function storeKnowledgeSource(input: StoredKnowledgeInput) {
 
 export async function retrieveKnowledgeForQuestion(companyId: number, message: string, limit = 4) {
   if (isPgvectorConfigured()) {
-    const chunks = await retrieveRelevantPgvectorChunks(companyId, message, limit);
-
-    if (chunks.length > 0) {
-      return chunks;
+    try {
+      const chunks = await retrieveRelevantPgvectorChunks(companyId, message, limit);
+      if (chunks.length > 0) {
+        return chunks;
+      }
+    } catch (err) {
+      console.error("[3Beeez] pgvector retrieval failed, falling back to SQLite:", err instanceof Error ? err.message : err);
     }
   }
 
