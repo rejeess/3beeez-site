@@ -114,7 +114,7 @@ export async function GET(request: NextRequest) {
     panel.style.right = "0";
     panel.style.bottom = "0";
     panel.style.width = "100%";
-    panel.style.height = "calc(100vh - 80px)";
+    panel.style.height = "calc(100dvh - 80px)";
     panel.style.borderRadius = "20px 20px 0 0";
   } else {
     panel.style.right = position === "bottom-right" ? "24px" : "auto";
@@ -135,16 +135,66 @@ export async function GET(request: NextRequest) {
   iframe.style.border = "0";
   iframe.style.background = "transparent";
 
+  // Mobile-only close button overlaid at the top-right corner of the bottom sheet
+  var mobileClose = null;
+  if (isMobile) {
+    mobileClose = document.createElement("button");
+    mobileClose.type = "button";
+    mobileClose.setAttribute("aria-label", "Close chat");
+    mobileClose.innerHTML = closeIcon;
+    mobileClose.style.position = "fixed";
+    mobileClose.style.top = "92px";
+    mobileClose.style.right = "16px";
+    mobileClose.style.width = "40px";
+    mobileClose.style.height = "40px";
+    mobileClose.style.borderRadius = "999px";
+    mobileClose.style.border = "0";
+    mobileClose.style.background = "rgba(255,255,255,0.15)";
+    mobileClose.style.color = "#fff";
+    mobileClose.style.cursor = "pointer";
+    mobileClose.style.display = "none";
+    mobileClose.style.alignItems = "center";
+    mobileClose.style.justifyContent = "center";
+    mobileClose.style.zIndex = "2147483647";
+    mobileClose.style.webkitTapHighlightColor = "transparent";
+    mobileClose.style.touchAction = "manipulation";
+    document.body.appendChild(mobileClose);
+  }
+
   panel.appendChild(iframe);
   document.body.appendChild(panel);
   document.body.appendChild(launcher);
 
+  function openPanel() {
+    panel.style.display = "block";
+    if (isMobile) {
+      launcher.style.display = "none";
+      if (mobileClose) { mobileClose.style.display = "flex"; }
+    } else {
+      launcher.innerHTML = closeIcon;
+      launcher.setAttribute("aria-label", "Close support chat");
+    }
+  }
+
+  function closePanel() {
+    panel.style.display = "none";
+    if (isMobile) {
+      launcher.style.display = "flex";
+      launcher.innerHTML = chatIcon;
+      if (mobileClose) { mobileClose.style.display = "none"; }
+    } else {
+      launcher.innerHTML = chatIcon;
+      launcher.setAttribute("aria-label", "Open support chat");
+    }
+  }
+
   launcher.addEventListener("click", function () {
-    var isOpen = panel.style.display === "block";
-    panel.style.display = isOpen ? "none" : "block";
-    launcher.innerHTML = isOpen ? chatIcon : closeIcon;
-    launcher.setAttribute("aria-label", isOpen ? "Open support chat" : "Close support chat");
+    if (panel.style.display === "block") { closePanel(); } else { openPanel(); }
   });
+
+  if (mobileClose) {
+    mobileClose.addEventListener("click", closePanel);
+  }
 })();
   `.trim();
 
