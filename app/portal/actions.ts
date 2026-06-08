@@ -38,17 +38,22 @@ export async function uploadWebsiteAction(formData: FormData) {
     url = "https://" + url;
   }
 
+  let pageCount = 0;
   try {
-    const website = await ingestWebsiteUrl(url);
-    await storeKnowledgeSource({ companyId, kind: "website", title: website.title, content: website.content });
+    const pages = await ingestWebsiteUrl(url);
+    for (const page of pages) {
+      await storeKnowledgeSource({ companyId, kind: "website", title: page.title, content: page.content });
+    }
+    pageCount = pages.length;
   } catch (error) {
     const message = error instanceof Error ? error.message : "Website import failed.";
-    revalidatePath("/portal");
-    redirect(`/portal?uploadError=${encodeURIComponent(message)}`);
+    revalidatePath("/portal/knowledge");
+    redirect(`/portal/knowledge?uploadError=${encodeURIComponent(message)}`);
   }
 
-  revalidatePath("/portal");
-  redirect("/portal?uploadSuccess=Website+content+imported+successfully");
+  const msg = `${pageCount} page${pageCount !== 1 ? "s" : ""} imported successfully`;
+  revalidatePath("/portal/knowledge");
+  redirect(`/portal/knowledge?uploadSuccess=${encodeURIComponent(msg)}`);
 }
 
 const MAX_UPLOAD_BYTES = 25 * 1024 * 1024; // 25 MB

@@ -6,7 +6,7 @@ import { useFormStatus } from "react-dom";
 const STEPS = {
   pdf:     ["Reading PDF",        "Extracting text",    "Chunking content", "Building search index"],
   word:    ["Reading document",   "Extracting text",    "Chunking content", "Building search index"],
-  website: ["Fetching page",      "Extracting content", "Chunking content", "Building search index"],
+  website: ["Checking sitemap",   "Discovering pages",  "Fetching content", "Building search index"],
   notes:   ["Processing content", "Chunking",           "Building search index", "Saving"],
 };
 
