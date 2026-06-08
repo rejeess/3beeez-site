@@ -1193,12 +1193,8 @@ export function createPurchaseOrder(input: {
   const normalizedIconColor = input.iconColor.trim() || "#5ae0d2";
   const loginUrl = `/login?company=${company.slug}`;
   const cardLast4 = input.cardNumber.replace(/\D/g, "").slice(-4);
-  const scriptSnippet = `<script
-  src="https://cdn.3beeez.com/widget.js"
-  data-install-token="${installToken}"
-  data-position="bottom-right"
-  data-icon-color="${normalizedIconColor}">
-</script>`;
+  const baseUrl = process.env.APP_BASE_URL?.replace(/\/$/, "") || "https://3beeez.com";
+  const scriptSnippet = `<script src="${baseUrl}/widget-script?installToken=${installToken}&position=bottom-right&iconColor=${encodeURIComponent(normalizedIconColor)}" async></script>`;
 
   db.prepare(
     `
