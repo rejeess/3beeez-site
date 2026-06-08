@@ -14,18 +14,6 @@ type AdminConversationListProps = {
   showCompany?: boolean;
 };
 
-function leadName(conversation: ConversationWithMessages) {
-  return conversation.leadName || "Anonymous visitor";
-}
-
-function leadCompany(conversation: ConversationWithMessages) {
-  return conversation.leadCompany || "No company shared";
-}
-
-function leadEmail(conversation: ConversationWithMessages) {
-  return conversation.leadEmail || "No email shared";
-}
-
 export function AdminConversationList({
   conversations,
   emptyTitle,
@@ -44,17 +32,20 @@ export function AdminConversationList({
           <article className="admin-card" key={conversation.id}>
             <div className="admin-card-header">
               <div>
-                <h2>{leadName(conversation)}</h2>
-                <p>
-                  {leadCompany(conversation)}
-                  {" · "}
-                  {leadEmail(conversation)}
-                </p>
+                <h2>{conversation.leadName || "Anonymous visitor"}</h2>
                 {showCompany ? (
-                  <p className="admin-company-line">
-                    Account: {conversation.companyName}
-                  </p>
+                  <p className="admin-company-line">Account: {conversation.companyName}</p>
                 ) : null}
+                <div className="admin-lead-grid">
+                  <div className="admin-lead-field">
+                    <span className="admin-label">Email</span>
+                    <span>{conversation.leadEmail || "—"}</span>
+                  </div>
+                  <div className="admin-lead-field">
+                    <span className="admin-label">Phone</span>
+                    <span>{conversation.leadPhone || "—"}</span>
+                  </div>
+                </div>
               </div>
               <div className="admin-meta">
                 <span>{formatDate(conversation.updatedAt)}</span>

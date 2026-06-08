@@ -1,7 +1,8 @@
 import "server-only";
 import { existsSync, mkdirSync } from "node:fs";
 import { randomBytes, scryptSync, timingSafeEqual } from "node:crypto";
-import { join } from "node:path";
+
+import { dirname, join } from "node:path";
 import { DatabaseSync } from "node:sqlite";
 import { getPurchaseMode } from "@/lib/purchase";
 import {
@@ -116,8 +117,7 @@ export type PurchaseOrderRecord = {
   createdAt: string;
 };
 
-const dataDir = join(process.cwd(), "data");
-const dbPath = join(dataDir, "app.db");
+const dbPath = process.env.SQLITE_DB_PATH ?? join(process.cwd(), "data", "app.db");
 
 declare global {
   // eslint-disable-next-line no-var
@@ -446,8 +446,9 @@ function initialize(db: DatabaseSync) {
 
 export function getDb() {
   if (!global.__threeBeeezDb) {
-    if (!existsSync(dataDir)) {
-      mkdirSync(dataDir, { recursive: true });
+    const dbDir = dirname(dbPath);
+    if (!existsSync(dbDir)) {
+      mkdirSync(dbDir, { recursive: true });
     }
 
     global.__threeBeeezDb = new DatabaseSync(dbPath);
@@ -877,6 +878,55 @@ export function listConversationsByCompany(companyId: number) {
   );
 }
 
+export function countConversationsByCompany(companyId: number): number {
+  const result = getDb()
+    .prepare("SELECT COUNT(*) as count FROM conversations WHERE company_id = ?")
+    .get(companyId) as { count: number };
+  return result.count;
+}
+
+export function listConversationsByCompanyPaginated(
+  companyId: number,
+  page: number,
+  perPage: number
+): ConversationRecord[] {
+  const offset = (page - 1) * perPage;
+  return getDb()
+    .prepare(
+      `
+        SELECT
+          conversations.id,
+          conversations.public_id as publicId,
+          conversations.company_id as companyId,
+          companies.slug as companySlug,
+          companies.name as companyName,
+          conversations.visitor_id as visitorId,
+          conversations.source_url as sourceUrl,
+          conversations.lead_name as leadName,
+          conversations.lead_email as leadEmail,
+          conversations.lead_company as leadCompany,
+          conversations.lead_phone as leadPhone,
+          conversations.created_at as createdAt,
+          conversations.updated_at as updatedAt,
+          COUNT(messages.id) as messageCount
+        FROM conversations
+        INNER JOIN companies ON companies.id = conversations.company_id
+        LEFT JOIN messages ON messages.conversation_id = conversations.id
+        WHERE conversations.company_id = ?
+        GROUP BY conversations.id
+        ORDER BY conversations.updated_at DESC
+        LIMIT ? OFFSET ?
+      `
+    )
+    .all(companyId, perPage, offset) as ConversationRecord[];
+}
+
+export function getConversationWithMessages(publicId: string): ConversationWithMessages | undefined {
+  const conversation = getConversationByPublicId(publicId);
+  if (!conversation) return undefined;
+  return { ...conversation, messages: getMessagesForConversation(conversation.id) };
+}
+
 export function listKnowledgeEntriesByCompany(companyId: number) {
   return getDb()
     .prepare(
@@ -894,6 +944,12 @@ export function listKnowledgeEntriesByCompany(companyId: number) {
       `
     )
     .all(companyId) as KnowledgeEntryRecord[];
+}
+
+export function deleteKnowledgeEntry(entryId: number, companyId: number) {
+  const db = getDb();
+  db.prepare("DELETE FROM knowledge_chunks WHERE knowledge_entry_id = ?").run(entryId);
+  db.prepare("DELETE FROM knowledge_entries WHERE id = ? AND company_id = ?").run(entryId, companyId);
 }
 
 export function getKnowledgeModelByCompany(companyId: number) {

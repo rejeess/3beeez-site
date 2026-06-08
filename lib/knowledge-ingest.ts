@@ -70,6 +70,83 @@ function stripHtml(html: string) {
   );
 }
 
+const PAGE_LIMIT = 25;
+const FETCH_TIMEOUT_MS = 8000;
+
+async function fetchPageHtml(url: string): Promise<string | null> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
+  try {
+    const res = await fetch(url, {
+      headers: { "User-Agent": "3Beeez Knowledge Ingest" },
+      signal: controller.signal,
+    });
+    if (!res.ok) return null;
+    return await res.text();
+  } catch {
+    return null;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+function parseSitemapLocs(xml: string): string[] {
+  const locs: string[] = [];
+  const re = /<loc>\s*(https?:\/\/[^\s<]+)\s*<\/loc>/gi;
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(xml)) !== null) locs.push(m[1].trim());
+  return locs;
+}
+
+function isCrawlable(url: string): boolean {
+  return !/\.(jpg|jpeg|png|gif|webp|svg|pdf|zip|mp4|mp3|css|js|woff2?|ttf|eot|ico)(\?|#|$)/i.test(url);
+}
+
+async function discoverPageUrls(origin: string): Promise<string[]> {
+  // 1. Try /sitemap.xml
+  const sitemapXml = await fetchPageHtml(`${origin}/sitemap.xml`);
+  if (sitemapXml) {
+    let urls: string[];
+    if (sitemapXml.includes("<sitemapindex")) {
+      // Sitemap index — fetch up to 5 sub-sitemaps
+      const subUrls = parseSitemapLocs(sitemapXml).slice(0, 5);
+      const all: string[] = [];
+      for (const sub of subUrls) {
+        const subXml = await fetchPageHtml(sub);
+        if (subXml) all.push(...parseSitemapLocs(subXml));
+      }
+      urls = all;
+    } else {
+      urls = parseSitemapLocs(sitemapXml);
+    }
+
+    const filtered = urls
+      .filter((u) => {
+        try { return new URL(u).hostname === new URL(origin).hostname; } catch { return false; }
+      })
+      .filter(isCrawlable);
+
+    if (filtered.length > 0) return filtered.slice(0, PAGE_LIMIT);
+  }
+
+  // 2. Fallback: shallow crawl from homepage
+  const homeHtml = await fetchPageHtml(origin);
+  if (!homeHtml) return [origin];
+
+  const links = new Set<string>([origin]);
+  const re = /href=["']((https?:\/\/[^"'#?]+|\/[^"'#?]*))["']/gi;
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(homeHtml)) !== null) {
+    try {
+      const resolved = new URL(m[1], origin).href.split(/[?#]/)[0];
+      if (new URL(resolved).hostname === new URL(origin).hostname && isCrawlable(resolved)) {
+        links.add(resolved);
+      }
+    } catch { /* skip malformed */ }
+  }
+  return [...links].slice(0, PAGE_LIMIT);
+}
+
 const BLOCKED_HOSTNAMES = new Set([
   "localhost",
   "127.0.0.1",
@@ -89,7 +166,7 @@ function isPrivateHostname(hostname: string): boolean {
   return false;
 }
 
-export async function ingestWebsiteUrl(url: string) {
+export async function ingestWebsiteUrl(url: string): Promise<Array<{ title: string; content: string; url: string }>> {
   let parsed: URL;
   try {
     parsed = new URL(url);
@@ -105,23 +182,35 @@ export async function ingestWebsiteUrl(url: string) {
     throw new Error("URL points to a private or reserved address.");
   }
 
-  const response = await fetch(url, {
-    headers: {
-      "User-Agent": "3Beeez Local Knowledge Ingest",
-    },
-  });
+  const origin = parsed.origin;
+  const pageUrls = await discoverPageUrls(origin);
 
-  if (!response.ok) {
-    throw new Error(`Unable to fetch website content (${response.status}).`);
+  // Ensure the submitted URL is included
+  const normalised = url.split(/[?#]/)[0].replace(/\/$/, "");
+  if (!pageUrls.some((u) => u.replace(/\/$/, "") === normalised)) {
+    pageUrls.unshift(url);
   }
 
-  const html = await response.text();
-  const titleMatch = html.match(/<title[^>]*>(.*?)<\/title>/i);
+  const pages: Array<{ title: string; content: string; url: string }> = [];
 
-  return {
-    title: cleanText(titleMatch?.[1] || url),
-    content: stripHtml(html).slice(0, 12000),
-  };
+  for (const pageUrl of pageUrls.slice(0, PAGE_LIMIT)) {
+    const html = await fetchPageHtml(pageUrl);
+    if (!html) continue;
+
+    const titleMatch = html.match(/<title[^>]*>(.*?)<\/title>/i);
+    const title = cleanText(titleMatch?.[1] || pageUrl);
+    const content = stripHtml(html).slice(0, 12000);
+
+    if (content.length < 100) continue;
+
+    pages.push({ title, content, url: pageUrl });
+  }
+
+  if (pages.length === 0) {
+    throw new Error("Could not extract readable content from any page on this website.");
+  }
+
+  return pages;
 }
 
 export async function ingestPdfFile(file: File) {

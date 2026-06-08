@@ -12,6 +12,8 @@ type InstalledTestSitePageProps = {
 export default async function InstalledTestSitePage({
   params,
 }: InstalledTestSitePageProps) {
+  if (process.env.NODE_ENV !== "development") notFound();
+
   const { companySlug } = await params;
   const company = getCompanyBySlug(companySlug);
 

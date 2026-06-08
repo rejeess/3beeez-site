@@ -1,7 +1,3 @@
-import { dirname } from "node:path";
-import { fileURLToPath } from "node:url";
-
-const projectRoot = dirname(fileURLToPath(import.meta.url));
 
 const securityHeaders = [
   { key: "X-Content-Type-Options", value: "nosniff" },
@@ -12,10 +8,15 @@ const securityHeaders = [
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  allowedDevOrigins: ["127.0.0.1", "192.168.86.36"],
+  allowedDevOrigins: ["localhost", "127.0.0.1", "192.168.86.36"],
   reactStrictMode: true,
-  turbopack: {
-    root: projectRoot,
+  devIndicators: false,
+  webpack: (config) => {
+    config.watchOptions = {
+      ...config.watchOptions,
+      ignored: ["**/data/**", "**/.git/**", "**/.next/**"],
+    };
+    return config;
   },
   async headers() {
     return [
