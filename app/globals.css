@@ -599,6 +599,68 @@ h2 {
   color: #ff9d9d;
 }
 
+.bubble-lead-form {
+  max-width: min(88%, 340px);
+  background: rgba(90, 224, 210, 0.06);
+  border: 1px solid rgba(90, 224, 210, 0.2);
+}
+
+.lead-capture-form {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.lead-capture-form input {
+  width: 100%;
+  padding: 8px 12px;
+  border-radius: 8px;
+  border: 1px solid rgba(255,255,255,0.1);
+  background: rgba(255,255,255,0.05);
+  color: var(--text);
+  font-size: 0.9rem;
+  box-sizing: border-box;
+}
+
+.lead-capture-form input:focus {
+  outline: none;
+  border-color: rgba(90, 224, 210, 0.5);
+}
+
+.lead-capture-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 4px;
+}
+
+.lead-capture-actions .button {
+  padding: 8px 18px;
+  font-size: 0.85rem;
+}
+
+.lead-capture-skip {
+  background: none;
+  border: none;
+  color: var(--muted);
+  font-size: 0.82rem;
+  cursor: pointer;
+  padding: 0;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.lead-capture-skip:hover {
+  color: var(--text);
+}
+
+.lead-capture-error {
+  color: #ff9d9d;
+  font-size: 0.82rem;
+  margin: 0;
+}
+
 .admin-shell {
   width: min(calc(100% - 32px), 1200px);
   margin: 0 auto;

@@ -55,6 +55,7 @@ export type ConversationRecord = {
   leadName: string;
   leadEmail: string;
   leadCompany: string;
+  leadPhone: string;
   createdAt: string;
   updatedAt: string;
   messageCount: number;
@@ -253,6 +254,7 @@ function initialize(db: DatabaseSync) {
       lead_name TEXT NOT NULL DEFAULT '',
       lead_email TEXT NOT NULL DEFAULT '',
       lead_company TEXT NOT NULL DEFAULT '',
+      lead_phone TEXT NOT NULL DEFAULT '',
       created_at TEXT NOT NULL,
       updated_at TEXT NOT NULL,
       FOREIGN KEY (company_id) REFERENCES companies(id)
@@ -338,6 +340,11 @@ function initialize(db: DatabaseSync) {
   }
   if (!companyColumns.some((col) => col.name === "install_token")) {
     db.exec("ALTER TABLE companies ADD COLUMN install_token TEXT NOT NULL DEFAULT ''");
+  }
+
+  const conversationColumns = db.prepare("PRAGMA table_info(conversations)").all() as Array<{ name: string }>;
+  if (!conversationColumns.some((col) => col.name === "lead_phone")) {
+    db.exec("ALTER TABLE conversations ADD COLUMN lead_phone TEXT NOT NULL DEFAULT ''");
   }
 
   const now = new Date().toISOString();
@@ -663,6 +670,7 @@ export function upsertConversation(input: {
     name?: string;
     email?: string;
     company?: string;
+    phone?: string;
   };
 }) {
   const db = getDb();
@@ -682,6 +690,7 @@ export function upsertConversation(input: {
               lead_name = COALESCE(NULLIF(?, ''), lead_name),
               lead_email = COALESCE(NULLIF(?, ''), lead_email),
               lead_company = COALESCE(NULLIF(?, ''), lead_company),
+              lead_phone = COALESCE(NULLIF(?, ''), lead_phone),
               updated_at = ?
           WHERE id = ?
         `
@@ -691,6 +700,7 @@ export function upsertConversation(input: {
         input.lead?.name?.trim() || "",
         input.lead?.email?.trim() || "",
         input.lead?.company?.trim() || "",
+        input.lead?.phone?.trim() || "",
         now,
         existing.id
       );
@@ -712,10 +722,11 @@ export function upsertConversation(input: {
         lead_name,
         lead_email,
         lead_company,
+        lead_phone,
         created_at,
         updated_at
       )
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `
   ).run(
     publicId,
@@ -725,6 +736,7 @@ export function upsertConversation(input: {
     input.lead?.name?.trim() || "",
     input.lead?.email?.trim() || "",
     input.lead?.company?.trim() || "",
+    input.lead?.phone?.trim() || "",
     now,
     now
   );
@@ -784,6 +796,7 @@ export function getConversationByPublicId(publicId: string) {
           conversations.lead_name as leadName,
           conversations.lead_email as leadEmail,
           conversations.lead_company as leadCompany,
+          conversations.lead_phone as leadPhone,
           conversations.created_at as createdAt,
           conversations.updated_at as updatedAt,
           (
