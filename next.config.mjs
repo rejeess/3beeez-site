@@ -11,6 +11,7 @@ const nextConfig = {
   allowedDevOrigins: ["localhost", "127.0.0.1", "192.168.86.36"],
   reactStrictMode: true,
   devIndicators: false,
+  turbopack: {},
   webpack: (config) => {
     config.watchOptions = {
       ...config.watchOptions,
