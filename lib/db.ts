@@ -1,7 +1,7 @@
 import "server-only";
 import { existsSync, mkdirSync } from "node:fs";
 import { randomBytes, scryptSync, timingSafeEqual } from "node:crypto";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
 import { DatabaseSync } from "node:sqlite";
 import { getPurchaseMode } from "@/lib/purchase";
 import {
@@ -116,8 +116,7 @@ export type PurchaseOrderRecord = {
   createdAt: string;
 };
 
-const dataDir = join(process.cwd(), "data");
-const dbPath = join(dataDir, "app.db");
+const dbPath = process.env.SQLITE_DB_PATH ?? join(process.cwd(), "data", "app.db");
 
 declare global {
   // eslint-disable-next-line no-var
@@ -446,8 +445,9 @@ function initialize(db: DatabaseSync) {
 
 export function getDb() {
   if (!global.__threeBeeezDb) {
-    if (!existsSync(dataDir)) {
-      mkdirSync(dataDir, { recursive: true });
+    const dbDir = dirname(dbPath);
+    if (!existsSync(dbDir)) {
+      mkdirSync(dbDir, { recursive: true });
     }
 
     global.__threeBeeezDb = new DatabaseSync(dbPath);
