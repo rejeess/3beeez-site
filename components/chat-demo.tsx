@@ -147,6 +147,7 @@ export function ChatDemo({
 
   const threadEndRef = useRef<HTMLDivElement>(null);
   const lastMessageRef = useRef<HTMLDivElement>(null);
+  const thinkingRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
   // Restore session state from localStorage
@@ -179,6 +180,13 @@ export function ChatDemo({
       threadEndRef.current?.scrollIntoView({ behavior: "smooth" });
     }
   }, [messages]);
+
+  // Scroll thinking bubble into view when it appears
+  useEffect(() => {
+    if (status === "sending") {
+      thinkingRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
+    }
+  }, [status]);
 
   // Focus input when widget opens
   useEffect(() => {
@@ -348,6 +356,13 @@ export function ChatDemo({
               </div>
             );
           })}
+          {status === "sending" && (
+            <div ref={thinkingRef} className="bubble bubble-bot bubble-thinking" aria-label="Assistant is typing">
+              <span className="thinking-dot" />
+              <span className="thinking-dot" />
+              <span className="thinking-dot" />
+            </div>
+          )}
           <div ref={threadEndRef} />
         </div>
 
