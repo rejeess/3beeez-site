@@ -34,6 +34,7 @@ async function handlePost(request: NextRequest) {
       name?: string;
       email?: string;
       company?: string;
+      phone?: string;
     };
   };
 
