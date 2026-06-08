@@ -9,6 +9,8 @@ type TestSitePageProps = {
 };
 
 export default async function TestSitePage({ params }: TestSitePageProps) {
+  if (process.env.NODE_ENV !== "development") notFound();
+
   const { companySlug } = await params;
   const company = getCompanyBySlug(companySlug);
 

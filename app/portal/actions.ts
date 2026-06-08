@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth";
-import { getCompanyBySlug } from "@/lib/db";
+import { deleteKnowledgeEntry, getCompanyBySlug } from "@/lib/db";
 import {
   ingestPdfFile,
   ingestWebsiteUrl,
@@ -118,6 +118,15 @@ export async function uploadWordAction(formData: FormData) {
 
   revalidatePath("/portal");
   redirect("/portal?uploadSuccess=Word+document+uploaded+successfully");
+}
+
+export async function deleteKnowledgeAction(formData: FormData) {
+  const companyId = await resolveCompanyId();
+  const entryId = Number(formData.get("entryId"));
+  if (!entryId) redirect("/portal");
+  deleteKnowledgeEntry(entryId, companyId);
+  revalidatePath("/portal");
+  redirect("/portal");
 }
 
 export async function saveNotesAction(formData: FormData) {

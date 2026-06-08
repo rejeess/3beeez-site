@@ -1045,11 +1045,140 @@ h2 {
 
 .knowledge-kind {
   display: inline-block;
-  margin-bottom: 8px;
+  margin-bottom: 6px;
   color: var(--accent);
   font-size: 0.8rem;
   text-transform: uppercase;
   letter-spacing: 0.1em;
+}
+
+.knowledge-item-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+}
+
+.knowledge-item-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.knowledge-item-title {
+  display: block;
+  margin-bottom: 6px;
+}
+
+.knowledge-item-preview {
+  margin: 6px 0 8px !important;
+  font-size: 0.9rem;
+  color: var(--muted);
+  line-height: 1.6;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.knowledge-item-date {
+  font-size: 0.8rem;
+  color: var(--muted);
+  opacity: 0.7;
+}
+
+.knowledge-delete-btn {
+  flex-shrink: 0;
+  padding: 6px 14px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  background: rgba(255, 80, 80, 0.1);
+  color: #ff7878;
+  border: 1px solid rgba(255, 80, 80, 0.25);
+  border-radius: 8px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.15s;
+}
+
+.knowledge-delete-btn:hover {
+  background: rgba(255, 80, 80, 0.2);
+}
+
+.knowledge-delete-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Upload progress */
+.upload-progress {
+  margin-top: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.upload-progress-bar {
+  height: 4px;
+  border-radius: 2px;
+  background: var(--line);
+  overflow: hidden;
+}
+
+.upload-progress-fill {
+  height: 100%;
+  border-radius: 2px;
+  background: var(--accent);
+  transition: width 0.5s ease;
+}
+
+.upload-progress-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.upload-step {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.82rem;
+  color: var(--muted);
+  transition: color 0.2s;
+}
+
+.upload-step-active {
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.upload-step-done {
+  color: var(--accent-strong);
+}
+
+.upload-step-icon {
+  width: 16px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.78rem;
+}
+
+.upload-step-icon-pending {
+  color: var(--muted);
+  opacity: 0.5;
+}
+
+@keyframes upload-spin {
+  to { transform: rotate(360deg); }
+}
+
+.upload-step-spinner {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  border: 2px solid rgba(90, 224, 210, 0.3);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: upload-spin 0.7s linear infinite;
 }
 
 .portal-help-card {
@@ -1156,6 +1285,26 @@ h2 {
   font-size: 0.9rem;
 }
 
+.admin-lead-grid {
+  display: flex;
+  gap: 28px;
+  margin-top: 10px;
+  flex-wrap: wrap;
+}
+
+.admin-lead-field {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  font-size: 0.95rem;
+}
+
+.admin-lead-field .admin-label {
+  margin-bottom: 0;
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+
 .admin-detail-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -1248,6 +1397,195 @@ h2 {
   clip: rect(0, 0, 0, 0);
   white-space: nowrap;
   border: 0;
+}
+
+/* Portal nav tabs */
+.portal-nav {
+  display: flex;
+  gap: 4px;
+  margin-top: 24px;
+  border-bottom: 1px solid var(--line);
+}
+
+.portal-nav-link {
+  padding: 10px 18px;
+  border-radius: 10px 10px 0 0;
+  font-size: 0.95rem;
+  color: var(--muted);
+  text-decoration: none;
+  transition: color 0.15s, background 0.15s;
+}
+
+.portal-nav-link:hover {
+  color: var(--text);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.portal-nav-link-active {
+  color: var(--text);
+  background: rgba(90, 224, 210, 0.1);
+  border-bottom: 2px solid var(--accent);
+}
+
+/* Topbar sign-out stays on one line */
+.portal-topbar-actions {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  flex-shrink: 0;
+  flex-wrap: nowrap;
+}
+
+/* Dashboard nav cards */
+.portal-nav-card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 24px;
+  border-radius: var(--radius-lg);
+  background: var(--panel);
+  border: 1px solid var(--line);
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(14px);
+  text-decoration: none;
+  color: var(--text);
+  transition: border-color 0.2s, background 0.2s;
+}
+
+.portal-nav-card:hover {
+  border-color: var(--accent);
+  background: rgba(90, 224, 210, 0.06);
+}
+
+.portal-nav-card strong {
+  font-size: 1.1rem;
+}
+
+.portal-nav-card p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.95rem;
+  line-height: 1.5;
+}
+
+.portal-nav-card-cta {
+  margin-top: auto;
+  color: var(--accent);
+  font-size: 0.9rem;
+}
+
+/* Conversation list rows */
+.conversation-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  padding: 18px 24px;
+  border-radius: var(--radius-lg);
+  background: var(--panel);
+  border: 1px solid var(--line);
+  text-decoration: none;
+  color: var(--text);
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.conversation-row:hover {
+  border-color: var(--accent);
+  background: rgba(90, 224, 210, 0.04);
+}
+
+.conversation-row-lead {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.conversation-row-name {
+  font-size: 1.05rem;
+}
+
+.conversation-row-contact {
+  display: flex;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.conversation-row-contact > span {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 0.9rem;
+  color: var(--muted);
+}
+
+.conversation-row-contact .admin-label {
+  margin-bottom: 0;
+  font-size: 0.72rem;
+}
+
+.conversation-row-meta {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
+  font-size: 0.88rem;
+  color: var(--muted);
+  flex-shrink: 0;
+}
+
+.conversation-row-count {
+  color: var(--accent);
+  font-size: 0.82rem;
+}
+
+/* Pagination */
+.portal-pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 16px;
+  padding: 16px 0;
+}
+
+.portal-page-btn {
+  padding: 8px 20px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--line);
+  color: var(--text);
+  text-decoration: none;
+  font-size: 0.9rem;
+  transition: background 0.15s;
+}
+
+.portal-page-btn:hover {
+  background: rgba(90, 224, 210, 0.1);
+}
+
+.portal-page-btn-disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.portal-page-info {
+  font-size: 0.9rem;
+  color: var(--muted);
+}
+
+/* Conversation detail back link */
+.conversation-detail-back {
+  margin-bottom: 12px;
+}
+
+.portal-back-link {
+  color: var(--accent);
+  text-decoration: none;
+  font-size: 0.9rem;
+}
+
+.portal-back-link:hover {
+  text-decoration: underline;
 }
 
 @keyframes rise-in {

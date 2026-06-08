@@ -12,6 +12,8 @@ type ScriptTagTestPageProps = {
 export default async function ScriptTagTestPage({
   params,
 }: ScriptTagTestPageProps) {
+  if (process.env.NODE_ENV !== "development") notFound();
+
   const { companySlug } = await params;
   const company = getCompanyBySlug(companySlug);
 
