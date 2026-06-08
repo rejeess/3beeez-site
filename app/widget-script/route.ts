@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getCompanyByBotId, getCompanyByInstallToken, isDomainAllowed } from "@/lib/db";
 
 export async function GET(request: NextRequest) {
-  const origin = request.nextUrl.origin;
+  const origin = process.env.APP_BASE_URL?.replace(/\/$/, "") || request.nextUrl.origin;
   const installToken = request.nextUrl.searchParams.get("installToken") || "";
   const botId = request.nextUrl.searchParams.get("botId") || "";
   const position =
