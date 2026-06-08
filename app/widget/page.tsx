@@ -6,6 +6,7 @@ type WidgetPageProps = {
   searchParams: Promise<{
     botId?: string;
     pageUrl?: string;
+    iconColor?: string;
   }>;
 };
 
@@ -15,7 +16,7 @@ const widgetPrompts = [
 ];
 
 export default async function WidgetPage({ searchParams }: WidgetPageProps) {
-  const { botId, pageUrl } = await searchParams;
+  const { botId, pageUrl, iconColor } = await searchParams;
   const company = botId ? getCompanyByBotId(botId) : undefined;
 
   if (!company) {
@@ -31,6 +32,7 @@ export default async function WidgetPage({ searchParams }: WidgetPageProps) {
         promptChips={widgetPrompts}
         variant="widget"
         pageUrl={pageUrl}
+        iconColor={iconColor}
       />
     </main>
   );

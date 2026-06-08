@@ -128,7 +128,7 @@ export async function GET(request: NextRequest) {
   }
 
   var iframe = document.createElement("iframe");
-  iframe.src = "${origin}/widget?botId=" + encodeURIComponent(botId) + "&pageUrl=" + encodeURIComponent(window.location.href);
+  iframe.src = "${origin}/widget?botId=" + encodeURIComponent(botId) + "&pageUrl=" + encodeURIComponent(window.location.href) + (iconColor ? "&iconColor=" + encodeURIComponent(iconColor) : "");
   iframe.title = "3Beeez chat widget";
   iframe.style.width = "100%";
   iframe.style.height = "100%";

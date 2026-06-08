@@ -23,6 +23,7 @@ type ChatDemoProps = {
   promptChips: string[];
   variant?: "full" | "widget";
   pageUrl?: string;
+  iconColor?: string;
 };
 
 function createId(prefix: string) {
@@ -128,6 +129,7 @@ export function ChatDemo({
   promptChips,
   variant = "full",
   pageUrl,
+  iconColor,
 }: ChatDemoProps) {
   const [input, setInput] = useState("");
   const [conversationId, setConversationId] = useState<string>("");
@@ -302,8 +304,12 @@ export function ChatDemo({
     void sendMessage(value);
   }
 
+  const accentStyle = iconColor
+    ? ({ "--accent": iconColor, "--accent-strong": iconColor } as React.CSSProperties)
+    : undefined;
+
   return (
-    <div className={variant === "widget" ? "widget-chat-shell" : "demo-layout"}>
+    <div className={variant === "widget" ? "widget-chat-shell" : "demo-layout"} style={accentStyle}>
       {variant === "full" ? (
         <div className="demo-sidebar">
           {promptChips.map((prompt) => (
