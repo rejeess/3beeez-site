@@ -9,6 +9,7 @@ import {
 
 type PurchaseFormProps = {
   defaultPlan: "monthly" | "annual";
+  inviteCode?: string;
 };
 
 const initialState: PurchaseFormState = {
@@ -16,7 +17,7 @@ const initialState: PurchaseFormState = {
   redirectUrl: undefined,
 };
 
-export function PurchaseForm({ defaultPlan }: PurchaseFormProps) {
+export function PurchaseForm({ defaultPlan, inviteCode = "" }: PurchaseFormProps) {
   const router = useRouter();
   const [state, formAction, isPending] = useActionState(
     submitPurchaseAction,
@@ -31,6 +32,7 @@ export function PurchaseForm({ defaultPlan }: PurchaseFormProps) {
 
   return (
     <form className="purchase-form" action={formAction}>
+      <input type="hidden" name="inviteCode" value={inviteCode} />
       <section className="purchase-section-card">
         <strong>Choose billing</strong>
         <div className="plan-selector">
