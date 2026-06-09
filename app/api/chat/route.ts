@@ -58,6 +58,13 @@ async function handlePost(request: NextRequest) {
     );
   }
 
+  if (company.status === "paused") {
+    return NextResponse.json(
+      { error: "Chat is temporarily unavailable. Please contact us directly." },
+      { status: 503 }
+    );
+  }
+
   if (company.status !== "active") {
     return NextResponse.json(
       { error: "This account is not active." },

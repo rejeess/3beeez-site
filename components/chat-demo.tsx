@@ -260,7 +260,10 @@ export function ChatDemo({
         }),
       });
 
-      if (!response.ok) throw new Error("Unable to store chat.");
+      if (!response.ok) {
+        const errBody = await response.json().catch(() => ({})) as { error?: string };
+        throw new Error(errBody.error || "Unable to store chat.");
+      }
 
       const payload = (await response.json()) as {
         conversationId: string;

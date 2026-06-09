@@ -9,6 +9,8 @@ import {
   listKnowledgeEntriesByCompany,
 } from "@/lib/db";
 import { UploadStatusBanner } from "@/components/upload-status-banner";
+import { SubmitButton } from "@/components/submit-button";
+import { toggleChatStatusAction } from "@/app/portal/actions";
 
 export const dynamic = "force-dynamic";
 
@@ -73,6 +75,30 @@ export default async function PortalPage({
           <pre className="install-snippet">
             <code>{`<script\n  src="/widget-script?installToken=${company.installToken}"\n  data-position="bottom-right">\n</script>`}</code>
           </pre>
+        </article>
+
+        <article className="portal-card portal-chat-status-card">
+          <div className="portal-chat-status-header">
+            <div>
+              <strong>Chat Service</strong>
+              <p>Control whether visitors on your website can see and use the chat widget.</p>
+            </div>
+            <span className={`portal-status-badge portal-status-badge-${company.status}`}>
+              {company.status === "active" ? "● Live" : company.status === "paused" ? "⏸ Paused" : company.status}
+            </span>
+          </div>
+          {company.status === "paused" && (
+            <p className="portal-status-warning">
+              Your chat widget is currently hidden from visitors. Resume it when you're ready.
+            </p>
+          )}
+          <form action={toggleChatStatusAction}>
+            <SubmitButton
+              label={company.status === "active" ? "Pause chat" : "Resume chat"}
+              pendingLabel={company.status === "active" ? "Pausing…" : "Resuming…"}
+              className={company.status === "active" ? "portal-pause-btn" : "portal-resume-btn"}
+            />
+          </form>
         </article>
 
         <Link href="/portal/knowledge" className="portal-nav-card">

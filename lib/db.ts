@@ -15,7 +15,7 @@ import {
   tokenMatchesText,
 } from "@/lib/rag";
 
-export type CompanyStatus = "active" | "suspended" | "expired";
+export type CompanyStatus = "active" | "paused" | "suspended" | "expired";
 
 export type CompanyRecord = {
   id: number;

@@ -24,6 +24,15 @@ export async function GET(request: NextRequest) {
     });
   }
 
+  if (company.status === "paused") {
+    return new NextResponse(`/* chat temporarily paused */`, {
+      headers: {
+        "Content-Type": "application/javascript; charset=utf-8",
+        "Cache-Control": "no-store",
+      },
+    });
+  }
+
   if (company.status !== "active") {
     return new NextResponse(
       `console.error("3Beeez: this account is not active.");`,

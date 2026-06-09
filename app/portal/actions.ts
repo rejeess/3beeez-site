@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth";
-import { deleteKnowledgeEntry, getCompanyBySlug } from "@/lib/db";
+import { deleteKnowledgeEntry, getCompanyBySlug, getCompanyById, setCompanyStatus } from "@/lib/db";
 import {
   ingestPdfFile,
   ingestWebsiteUrl,
@@ -144,4 +144,14 @@ export async function saveNotesAction(formData: FormData) {
   await storeKnowledgeSource({ companyId, kind: "history", title, content });
   revalidatePath("/portal");
   redirect("/portal?uploadSuccess=Notes+saved+successfully");
+}
+
+export async function toggleChatStatusAction() {
+  const companyId = await resolveCompanyId();
+  const company = getCompanyById(companyId);
+  if (!company) redirect("/portal");
+
+  const next = company.status === "active" ? "paused" : "active";
+  setCompanyStatus(companyId, next);
+  revalidatePath("/portal");
 }
