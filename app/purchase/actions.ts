@@ -12,6 +12,12 @@ export async function submitPurchaseAction(
   _previousState: PurchaseFormState,
   formData: FormData
 ) {
+  const inviteCode = String(formData.get("inviteCode") || "").trim();
+  const requiredCode = process.env.PURCHASE_INVITE_CODE;
+  if (requiredCode && inviteCode !== requiredCode) {
+    return { error: "Invalid or missing invitation code." };
+  }
+
   const planId = String(formData.get("planId") || "monthly");
   const billingLabel =
     planId === "annual" ? "Annual one-time - $800" : "Monthly - $70";
