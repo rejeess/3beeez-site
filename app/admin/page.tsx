@@ -70,7 +70,10 @@ export default async function AdminPage() {
             <p>
               Test site: <code>{`/test-site/${company.slug}`}</code>
             </p>
-            <div className="purchase-actions" style={{ marginTop: "12px" }}>
+            <div className="purchase-actions" style={{ marginTop: "12px", display: "flex", gap: "10px", flexWrap: "wrap" }}>
+              <a className="button button-secondary" href={`/admin/companies/${company.id}/edit`}>
+                Edit
+              </a>
               {company.status === "active" ? (
                 <form action={updateCompanyStatus}>
                   <input type="hidden" name="companyId" value={company.id} />

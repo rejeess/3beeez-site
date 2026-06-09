@@ -1269,6 +1269,18 @@ export function setCompanyStatus(companyId: number, status: CompanyStatus) {
     .run(status, companyId);
 }
 
+export function getCompanyById(id: number) {
+  return getDb()
+    .prepare("SELECT id, slug, name, bot_id as botId, allowed_domain as allowedDomain, status, install_token as installToken FROM companies WHERE id = ?")
+    .get(id) as CompanyRecord | undefined;
+}
+
+export function updateCompany(id: number, input: { name: string; botId: string; allowedDomain: string }) {
+  getDb()
+    .prepare("UPDATE companies SET name = ?, bot_id = ?, allowed_domain = ? WHERE id = ?")
+    .run(input.name.trim(), input.botId.trim(), input.allowedDomain.trim(), id);
+}
+
 export function getCompanyByInstallToken(token: string) {
   return getDb()
     .prepare(
