@@ -11,8 +11,8 @@ type WidgetPageProps = {
 };
 
 const widgetPrompts = [
-  "What is your return policy?",
-  "Can you help me with onboarding?",
+  "What services do you offer?",
+  "How can I get in touch?",
 ];
 
 export default async function WidgetPage({ searchParams }: WidgetPageProps) {
