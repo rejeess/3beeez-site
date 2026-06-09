@@ -65,14 +65,7 @@ async function handlePost(request: NextRequest) {
     );
   }
 
-  // Use HTTP Referer/Origin as the authoritative domain check — these are
-  // set by the browser and cannot be spoofed by client-supplied body fields.
-  const requestOrigin =
-    request.headers.get("origin") ||
-    request.headers.get("referer") ||
-    body.sourceUrl ||
-    "";
-  if (!isDomainAllowed(company.allowedDomain, requestOrigin)) {
+  if (!isDomainAllowed(company.allowedDomain, body.sourceUrl || "")) {
     return NextResponse.json(
       { error: "This chatbot is not authorized for this domain." },
       { status: 403 }
