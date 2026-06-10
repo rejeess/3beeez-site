@@ -88,7 +88,6 @@ export function FloatingChatButton({ botId, origin }: { botId: string; origin: s
           WebkitTapHighlightColor: "transparent",
           touchAction: "manipulation",
           padding: 0,
-          outline: "none",
         }}
       >
         {open ? (

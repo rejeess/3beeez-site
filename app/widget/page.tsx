@@ -1,6 +1,11 @@
+import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { ChatDemo } from "@/components/chat-demo";
 import { getCompanyByBotId } from "@/lib/db";
+
+export const metadata: Metadata = {
+  robots: { index: false, follow: false },
+};
 
 type WidgetPageProps = {
   searchParams: Promise<{
