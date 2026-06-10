@@ -75,17 +75,15 @@ function LoginPhase({ onVerify }: { onVerify: (state: VerifyState) => void }) {
   );
 
   const [showPassword, setShowPassword] = useState(false);
-  const fpRef = useRef<HTMLInputElement>(null);
 
-  useEffect(() => {
-    if (fpRef.current) {
-      fpRef.current.value = collectFingerprint();
-    }
-  }, []);
+  const handleSubmit = (e: { currentTarget: HTMLFormElement }) => {
+    const fp = e.currentTarget.elements.namedItem("fingerprint") as HTMLInputElement | null;
+    if (fp) fp.value = collectFingerprint();
+  };
 
   return (
-    <form className="login-form" action={formAction}>
-      <input ref={fpRef} type="hidden" name="fingerprint" defaultValue="" />
+    <form className="login-form" action={formAction} onSubmit={handleSubmit}>
+      <input type="hidden" name="fingerprint" defaultValue="unknown" />
       <label className="login-label">
         <span>Email</span>
         <input
