@@ -53,7 +53,13 @@ export async function loginAction(
   const code = createDeviceVerification(user.id, fingerprint);
 
   if (isEmailConfigured()) {
-    sendDeviceVerificationEmail(user.email, code).catch(() => {});
+    sendDeviceVerificationEmail(user.email, code).then((status) => {
+      if (status === "failed") {
+        console.error(`[3Beeez] OTP email failed for ${user.email} — check SMTP config`);
+      }
+    }).catch((err) => {
+      console.error(`[3Beeez] OTP email error for ${user.email}:`, err);
+    });
   } else {
     console.log(`[3Beeez] Device verification code for ${user.email}: ${code}`);
   }
