@@ -27,25 +27,30 @@ export default async function PortalLayout({ children }: { children: ReactNode }
   if (!company) redirect("/login");
 
   return (
-    <main className="admin-shell">
-      <section className="admin-hero">
-        <div className="admin-topbar">
-          <div>
-            <p className="eyebrow">
-              {user.role === "owner" ? "3Beeez knowledge portal" : "Client portal"}
-            </p>
-            <h1>{company.name}</h1>
-          </div>
-          <div className="portal-topbar-actions">
-            {user.role === "owner" && (
-              <a className="button button-secondary" href="/admin">Back to admin</a>
-            )}
-            <LogoutForm />
-          </div>
-        </div>
+    <div className="portal-shell">
+      <aside className="portal-sidebar">
+        <a className="portal-sidebar-logo" href="/portal" aria-label="3Beeez portal home">
+          <span className="brand-mark">3B</span>
+          <span className="brand-text">3beeez</span>
+        </a>
+
         <PortalNav />
-      </section>
-      {children}
-    </main>
+
+        <div className="portal-sidebar-footer">
+          <div className="portal-sidebar-company">
+            <span className={`portal-sidebar-status-dot portal-sidebar-status-dot-${company.status}`} aria-hidden="true" />
+            <span className="portal-sidebar-company-name" title={company.name}>{company.name}</span>
+          </div>
+          {user.role === "owner" && (
+            <a className="portal-sidebar-admin-link" href="/admin">↗ Admin panel</a>
+          )}
+          <LogoutForm />
+        </div>
+      </aside>
+
+      <main className="portal-main">
+        {children}
+      </main>
+    </div>
   );
 }

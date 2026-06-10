@@ -20,11 +20,10 @@ export default async function LoginPage({
   return (
     <main className="login-shell">
       <section className="login-card">
-        <p className="eyebrow">Client and owner access</p>
-        <h1>Sign in to view chat conversations</h1>
+        <h1>Turn conversations into customer insights</h1>
         <p className="admin-intro">
-          Company admins can view only their own website chats. The 3Beeez
-          owner account can view all companies and manage the service.
+          Access chat history, manage your AI knowledge base, identify
+          high-quality leads, and monitor chatbot performance.
         </p>
         {passwordReset && (
           <p className="portal-card-success" style={{ padding: "12px 16px", borderRadius: "8px", marginBottom: "8px" }}>
@@ -32,12 +31,14 @@ export default async function LoginPage({
           </p>
         )}
         <LoginForm />
-        <Link className="login-link" href="/login/forgot-password">
-          Forgot your password?
-        </Link>
-        <Link className="login-link" href="/">
-          Back to homepage
-        </Link>
+        <div className="login-links">
+          <Link className="login-link" href="/login/forgot-password">
+            Forgot your password?
+          </Link>
+          <Link className="login-link" href="/">
+            Back to homepage
+          </Link>
+        </div>
       </section>
     </main>
   );

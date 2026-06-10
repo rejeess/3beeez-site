@@ -17,6 +17,7 @@ function KnowledgeEntry({
   deleteAction: (formData: FormData) => Promise<void>;
 }) {
   const [expanded, setExpanded] = useState(false);
+  const [confirming, setConfirming] = useState(false);
   const isLong = entry.content.length > 300;
   const preview = isLong && !expanded ? entry.content.slice(0, 300) + "…" : entry.content;
 
@@ -40,10 +41,33 @@ function KnowledgeEntry({
             Added {new Date(entry.createdAt).toLocaleDateString()}
           </span>
         </div>
-        <form action={deleteAction}>
-          <input type="hidden" name="entryId" value={entry.id} />
-          <SubmitButton label="Delete" pendingLabel="Deleting…" className="knowledge-delete-btn" />
-        </form>
+
+        {confirming ? (
+          <div className="knowledge-delete-confirm">
+            <span className="knowledge-delete-confirm-label">Delete this source?</span>
+            <div className="knowledge-delete-confirm-actions">
+              <form action={deleteAction}>
+                <input type="hidden" name="entryId" value={entry.id} />
+                <SubmitButton label="Yes, delete" pendingLabel="Deleting…" className="knowledge-delete-confirm-btn" />
+              </form>
+              <button
+                type="button"
+                className="knowledge-delete-cancel-btn"
+                onClick={() => setConfirming(false)}
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        ) : (
+          <button
+            type="button"
+            className="knowledge-delete-btn"
+            onClick={() => setConfirming(true)}
+          >
+            Delete
+          </button>
+        )}
       </div>
     </div>
   );

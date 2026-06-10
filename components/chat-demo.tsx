@@ -88,6 +88,7 @@ function LeadCaptureCard({
         <input
           type="text"
           placeholder="Your name *"
+          aria-label="Your name (required)"
           value={name}
           onChange={(e) => setName(e.target.value)}
           autoComplete="name"
@@ -96,6 +97,7 @@ function LeadCaptureCard({
         <input
           type="email"
           placeholder="Email address *"
+          aria-label="Email address (required)"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           autoComplete="email"
@@ -104,6 +106,7 @@ function LeadCaptureCard({
         <input
           type="tel"
           placeholder="Phone number (optional)"
+          aria-label="Phone number (optional)"
           value={phone}
           onChange={(e) => setPhone(e.target.value)}
           autoComplete="tel"
@@ -341,7 +344,7 @@ export function ChatDemo({
           <span className="chat-live">Live demo</span>
         </div>
 
-        <div className="chat-thread">
+        <div className="chat-thread" role="log" aria-live="polite" aria-label="Chat messages">
           {messages.map((message, index) => {
             if (message.type === "lead-form") {
               if (leadCaptured) return null;

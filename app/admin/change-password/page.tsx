@@ -29,7 +29,7 @@ export default function ChangePasswordPage() {
         <label className="login-label">
           New password
           <input name="next" type="password" required autoComplete="new-password" minLength={8} />
-          <small style={{ color: "var(--color-muted, #888)", marginTop: "4px" }}>
+          <small style={{ color: "var(--muted)", marginTop: "4px" }}>
             Min 8 characters, uppercase, lowercase, and a number or symbol.
           </small>
         </label>

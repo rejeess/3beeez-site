@@ -128,10 +128,10 @@ export async function uploadWordAction(formData: FormData) {
 export async function deleteKnowledgeAction(formData: FormData) {
   const companyId = await resolveCompanyId();
   const entryId = Number(formData.get("entryId"));
-  if (!entryId) redirect("/portal");
+  if (!entryId) redirect("/portal/knowledge");
   deleteKnowledgeEntry(entryId, companyId);
-  revalidatePath("/portal");
-  redirect("/portal");
+  revalidatePath("/portal/knowledge");
+  redirect("/portal/knowledge");
 }
 
 export async function saveNotesAction(formData: FormData) {
@@ -139,11 +139,11 @@ export async function saveNotesAction(formData: FormData) {
   const title = String(formData.get("title") || "").trim();
   const content = String(formData.get("content") || "").trim();
 
-  if (!title || !content) redirect("/portal");
+  if (!title || !content) redirect("/portal/knowledge");
 
   await storeKnowledgeSource({ companyId, kind: "history", title, content });
-  revalidatePath("/portal");
-  redirect("/portal?uploadSuccess=Notes+saved+successfully");
+  revalidatePath("/portal/knowledge");
+  redirect("/portal/knowledge?uploadSuccess=Notes+saved+successfully");
 }
 
 export async function toggleChatStatusAction() {
