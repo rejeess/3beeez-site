@@ -142,7 +142,10 @@ export function isDomainAllowed(allowedDomain: string, originOrUrl: string): boo
   if (!originOrUrl) return false;
 
   const lower = originOrUrl.toLowerCase();
-  if (lower.includes("localhost") || lower.includes("127.0.0.1")) return true;
+  if (
+    process.env.NODE_ENV !== "production" &&
+    (lower.includes("localhost") || lower.includes("127.0.0.1"))
+  ) return true;
 
   try {
     const parsed = new URL(originOrUrl);
