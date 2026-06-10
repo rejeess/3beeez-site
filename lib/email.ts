@@ -45,6 +45,40 @@ export async function sendPasswordResetEmail(to: string, resetUrl: string): Prom
   }
 }
 
+export async function sendDeviceVerificationEmail(
+  to: string,
+  code: string
+): Promise<"sent" | "not_configured" | "failed"> {
+  if (!isEmailConfigured()) return "not_configured";
+
+  const transporter = nodemailer.createTransport({
+    host: process.env.SMTP_HOST,
+    port: Number(process.env.SMTP_PORT),
+    secure: process.env.SMTP_SECURE === "true",
+    auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS },
+  });
+
+  try {
+    await transporter.sendMail({
+      from: process.env.SMTP_FROM,
+      to,
+      subject: "3Beeez — verify your device",
+      text: [
+        "A sign-in was attempted from an unrecognised device.",
+        "",
+        `Your one-time verification code is: ${code}`,
+        "",
+        "This code expires in 15 minutes.",
+        "",
+        "If you did not attempt to sign in, change your password immediately.",
+      ].join("\n"),
+    });
+    return "sent";
+  } catch {
+    return "failed";
+  }
+}
+
 export async function sendPurchaseEmail(order: PurchaseOrderRecord) {
   if (!isEmailConfigured()) {
     return {

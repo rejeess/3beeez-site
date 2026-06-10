@@ -6,10 +6,35 @@ import {
   deleteSession,
   findSession,
   findUserByEmail,
+  findUserById,
   verifyPassword,
 } from "@/lib/db";
 
 const sessionCookieName = "threebeeez_session";
+
+export function checkCredentials(email: string, password: string) {
+  const normalizedEmail = email.trim().toLowerCase();
+  const user = findUserByEmail(normalizedEmail);
+  if (!user || !verifyPassword(password, user.passwordHash)) {
+    return null;
+  }
+  return user;
+}
+
+export async function createUserSession(userId: number) {
+  const user = findUserById(userId);
+  if (!user) throw new Error("User not found");
+  const session = createSession(userId);
+  const cookieStore = await cookies();
+  cookieStore.set(sessionCookieName, session.token, {
+    httpOnly: true,
+    sameSite: "lax",
+    secure: process.env.NODE_ENV === "production",
+    path: "/",
+    expires: session.expiresAt,
+  });
+  return user;
+}
 
 export async function signIn(email: string, password: string) {
   const normalizedEmail = email.trim().toLowerCase();

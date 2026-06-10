@@ -27,32 +27,35 @@ export default async function EditCompanyPage({ params }: { params: Promise<{ id
           <input type="hidden" name="companyId" value={company.id} />
 
           <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-            <label style={{ fontSize: "13px", fontWeight: 600, opacity: 0.7 }}>Company Name</label>
+            <label htmlFor="company-name" style={{ fontSize: "13px", fontWeight: 600, opacity: 0.7 }}>Company Name</label>
             <input
+              id="company-name"
               name="name"
               required
               defaultValue={company.name}
-              style={{ padding: "10px 14px", borderRadius: "8px", border: "1px solid rgba(255,255,255,0.15)", background: "rgba(255,255,255,0.05)", color: "inherit", fontSize: "15px" }}
+              style={{ padding: "10px 14px", borderRadius: "8px", border: "1px solid var(--line)", background: "var(--panel)", color: "inherit", fontSize: "15px" }}
             />
           </div>
 
           <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-            <label style={{ fontSize: "13px", fontWeight: 600, opacity: 0.7 }}>Bot ID</label>
+            <label htmlFor="bot-id" style={{ fontSize: "13px", fontWeight: 600, opacity: 0.7 }}>Bot ID</label>
             <input
+              id="bot-id"
               name="botId"
               required
               defaultValue={company.botId}
-              style={{ padding: "10px 14px", borderRadius: "8px", border: "1px solid rgba(255,255,255,0.15)", background: "rgba(255,255,255,0.05)", color: "inherit", fontSize: "15px" }}
+              style={{ padding: "10px 14px", borderRadius: "8px", border: "1px solid var(--line)", background: "var(--panel)", color: "inherit", fontSize: "15px" }}
             />
           </div>
 
           <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-            <label style={{ fontSize: "13px", fontWeight: 600, opacity: 0.7 }}>Allowed Domain</label>
+            <label htmlFor="allowed-domain" style={{ fontSize: "13px", fontWeight: 600, opacity: 0.7 }}>Allowed Domain</label>
             <input
+              id="allowed-domain"
               name="allowedDomain"
               defaultValue={company.allowedDomain}
               placeholder="e.g. example.com — leave empty for unrestricted"
-              style={{ padding: "10px 14px", borderRadius: "8px", border: "1px solid rgba(255,255,255,0.15)", background: "rgba(255,255,255,0.05)", color: "inherit", fontSize: "15px" }}
+              style={{ padding: "10px 14px", borderRadius: "8px", border: "1px solid var(--line)", background: "var(--panel)", color: "inherit", fontSize: "15px" }}
             />
             <p style={{ fontSize: "12px", opacity: 0.5, margin: 0 }}>
               Leave empty to allow all domains. Enter a domain (e.g. <code>abc-realtors.vercel.app</code>) to restrict.

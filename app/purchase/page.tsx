@@ -1,5 +1,17 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { PurchaseForm } from "@/components/purchase-form";
+
+export const metadata: Metadata = {
+  title: "Get Started | 3Beeez",
+  description:
+    "Set up your 3Beeez AI chat widget in minutes. Choose a plan, enter your details, and get your embed script instantly.",
+  openGraph: {
+    title: "Get Started | 3Beeez",
+    description:
+      "Set up your 3Beeez AI chat widget in minutes. Choose a plan, enter your details, and get your embed script instantly.",
+  },
+};
 
 type PurchasePageProps = {
   searchParams: Promise<{

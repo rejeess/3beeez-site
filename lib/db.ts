@@ -142,7 +142,10 @@ export function isDomainAllowed(allowedDomain: string, originOrUrl: string): boo
   if (!originOrUrl) return false;
 
   const lower = originOrUrl.toLowerCase();
-  if (lower.includes("localhost") || lower.includes("127.0.0.1")) return true;
+  if (
+    process.env.NODE_ENV !== "production" &&
+    (lower.includes("localhost") || lower.includes("127.0.0.1"))
+  ) return true;
 
   try {
     const parsed = new URL(originOrUrl);
@@ -324,6 +327,29 @@ function initialize(db: DatabaseSync) {
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       token TEXT NOT NULL UNIQUE,
       user_id INTEGER NOT NULL,
+      expires_at TEXT NOT NULL,
+      used INTEGER NOT NULL DEFAULT 0,
+      created_at TEXT NOT NULL,
+      FOREIGN KEY (user_id) REFERENCES users(id)
+    );
+
+    CREATE TABLE IF NOT EXISTS device_fingerprints (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL,
+      fingerprint TEXT NOT NULL,
+      trusted_at TEXT NOT NULL,
+      last_seen_at TEXT NOT NULL,
+      revoked INTEGER NOT NULL DEFAULT 0,
+      FOREIGN KEY (user_id) REFERENCES users(id),
+      UNIQUE(user_id, fingerprint)
+    );
+
+    CREATE TABLE IF NOT EXISTS device_verifications (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL,
+      fingerprint TEXT NOT NULL,
+      code TEXT NOT NULL,
+      attempts INTEGER NOT NULL DEFAULT 0,
       expires_at TEXT NOT NULL,
       used INTEGER NOT NULL DEFAULT 0,
       created_at TEXT NOT NULL,
@@ -581,6 +607,15 @@ export function findUserByEmail(email: string) {
       `
     )
     .get(email) as (UserRecord & { passwordHash: string }) | undefined;
+}
+
+export function findUserById(id: number) {
+  return getDb()
+    .prepare(
+      `SELECT id, company_id as companyId, email, name, role
+       FROM users WHERE id = ?`
+    )
+    .get(id) as UserRecord | undefined;
 }
 
 export function updateUserPassword(userId: number, newPassword: string) {

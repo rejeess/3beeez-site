@@ -1,6 +1,11 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getCompanyBySlug } from "@/lib/db";
+
+export const metadata: Metadata = {
+  robots: { index: false, follow: false },
+};
 
 type PurchaseDemoPageProps = {
   params: Promise<{
