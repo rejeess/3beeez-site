@@ -11,7 +11,7 @@ import {
   trustDevice,
   verifyDeviceCode,
 } from "@/lib/device-auth";
-import { sendDeviceVerificationEmail } from "@/lib/email";
+import { sendDeviceVerificationEmail, isEmailConfigured } from "@/lib/email";
 
 export type LoginState =
   | { phase: "login"; error: string }
@@ -51,9 +51,10 @@ export async function loginAction(
   }
 
   const code = createDeviceVerification(user.id, fingerprint);
-  const emailStatus = await sendDeviceVerificationEmail(user.email, code);
 
-  if (emailStatus === "not_configured") {
+  if (isEmailConfigured()) {
+    sendDeviceVerificationEmail(user.email, code).catch(() => {});
+  } else {
     console.log(`[3Beeez] Device verification code for ${user.email}: ${code}`);
   }
 
