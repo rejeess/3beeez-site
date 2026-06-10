@@ -75,8 +75,8 @@ Every company has an `allowed_domain` (e.g. `acmecorp.com`). The domain is extra
 SQLite database lives at `data/app.db` and is auto-initialized (schema + seed) on first `getDb()` call. The global `__threeBeeezDb` singleton avoids re-opening across hot reloads. Pgvector schema auto-migrates in `ensurePgvectorSchema()`.
 
 Seeded demo accounts (local only):
-- Owner: `owner@3beeez.com` / `OwnerPass!2026`
-- Client: `admin@acme-support.com` / `AcmePortal!2026`
+- Owner: `owner@3beeez.com` / set via `SEED_OWNER_PASSWORD` in `.env.local`
+- Client: `admin@acme-support.com` / set via `SEED_CLIENT_PASSWORD` in `.env.local`
 
 ### Environment variables
 
